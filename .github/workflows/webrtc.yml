@@ -48,9 +48,8 @@ jobs:
           npm test --prefix src/WhitePad.Web
           npm run build --prefix src/WhitePad.Web
           test -f src/WhitePad.Web/dist/index.html
-          npm run build:server --prefix src/WhitePad.Web
-          test -f src/WhitePad.Server/wwwroot/index.html
-          VITE_TRANSPORT=webrtc npm run build --prefix src/WhitePad.Web
+          node tools/webrtc/build-native-protocol.mjs
+          git diff --exit-code -- src/WhitePad.iPad/WhitePad.iPad/Resources/whitepad-protocol.js
           npm run check --prefix src/WhitePad.Signalling
           npm run test:deploy --prefix src/WhitePad.Signalling
           npm run test:quota --prefix src/WhitePad.Signalling
@@ -85,7 +84,7 @@ jobs:
           done
           npm run test:browser --prefix src/WhitePad.Signalling
   native-join-compatibility:
-    # Foundation-only checks work on Intel; avoid the exhausted hosted arm64 runner pool.
+    # Keep the Intel runner used by existing checks; also build/test the native app.
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -93,6 +92,18 @@ jobs:
         run: |
           swiftc src/WhitePad.iPad/WhitePad.iPad/Features/Join/JoinLink.swift src/WhitePad.iPad/WhitePad.iPad/App/DeepLinkRouter.swift src/WhitePad.iPad/WhitePad.iPad/Shared/WhitePadError.swift src/WhitePad.iPad/tools/verify-join.swift -o /tmp/whitepad-verify-join
           /tmp/whitepad-verify-join
+
+      - name: Native shared protocol reducer
+        run: |
+          swiftc src/WhitePad.iPad/WhitePad.iPad/Services/NativeBoard.swift src/WhitePad.iPad/WhitePad.iPad/Models/DrawingStroke.swift src/WhitePad.iPad/WhitePad.iPad/Models/HubMessages.swift src/WhitePad.iPad/WhitePad.iPad/Shared/WhitePadError.swift src/WhitePad.iPad/tools/verify-native-board.swift -o /tmp/whitepad-native-board
+          /tmp/whitepad-native-board src/WhitePad.iPad/WhitePad.iPad/Resources/whitepad-protocol.js
+      - name: Native app and XCTest on an available iPad simulator
+        timeout-minutes: 15
+        shell: bash
+        run: |
+          set -euo pipefail
+          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for a in d["devices"].values() for x in a if "iPad" in x["name"]))')
+          xcodebuild test -project src/WhitePad.iPad/WhitePad.iPad.xcodeproj -scheme WhitePad.iPad -destination "platform=iOS Simulator,id=$device" -derivedDataPath /tmp/whitepad-xcode CODE_SIGNING_ALLOWED=NO -quiet
 
   deploy-cloudflare:
     needs: [release-checks]

@@ -37,7 +37,7 @@ Do not use an HTTP LAN IP to assess iPad recovery: IndexedDB and browser transpo
 
 ### GitHub Actions setup (no local deployment commands)
 
-The **WebRTC migration checks** workflow builds the static frontend (`dist`), the legacy server frontend, and the Worker bundle; runs backend, unit, restart, native compatibility and real-browser checks; and uploads a seven-day build artifact. The `release-checks` job requires all three verification jobs to pass; Cloudflare deployment depends on that gate. Pull requests never deploy or receive deployment credentials.
+The **WebRTC migration checks** workflow builds the static frontend (`dist`), and the Worker bundle; runs backend, unit, restart, native compatibility and real-browser checks; and uploads a seven-day build artifact. The `release-checks` job requires all three verification jobs to pass; Cloudflare deployment depends on that gate. Pull requests never deploy or receive deployment credentials.
 
 1. In GitHub repository **Settings → Environments**, create `cloudflare-staging`. Create `cloudflare-production` separately when ready for release. Use distinct Worker names and credentials for the two environments; each Worker owns its own Durable Object room namespace. Keep each name stable across redeployments. Restrict production to `main`; environment reviewers can provide the school's release gate.
 2. Add these **environment secrets** to each environment you intend to deploy:
@@ -67,7 +67,7 @@ Origins must be exact HTTPS origins without paths, trailing slashes or wildcards
    - To use the separate production backend for main releases, configure `cloudflare-production` first and set repository variable `CLOUDFLARE_MAIN_ENVIRONMENT=cloudflare-production`. Keep Vercel's Production `VITE_SIGNALLING_URL` pointing to the same backend selected for main. Leaving the variable unset uses staging; keep Vercel's Production pointing to the staging Worker during that pilot.
    - **Manual:** open **Actions → WebRTC migration checks → Run workflow**, select the branch and target environment. Production is allowed only from `main`. All verification jobs run first. Pull requests run tests and build Vercel previews without Cloudflare deployment credentials.
 
-5. Find the deployed `workers.dev` URL in the deployment job output. Set Vercel's `VITE_SIGNALLING_URL` to that URL, with `VITE_TRANSPORT=webrtc` and `VITE_RTC_RELAY_ONLY=false`, then redeploy the frontend. Vercel's Git integration builds it automatically on subsequent pushes; do not add Vercel deployment credentials to the Cloudflare workflow.
+5. Find the deployed `workers.dev` URL in the deployment job output. Set Vercel's `VITE_SIGNALLING_URL` to that URL, with `VITE_RTC_RELAY_ONLY=false`, then redeploy the frontend. Vercel's Git integration builds it automatically on subsequent pushes; do not add Vercel deployment credentials to the Cloudflare workflow.
 
 The workflow does not purchase a plan, configure managed TURN keys, promote Vercel or replace the legacy deployment. Cloudflare must already permit Workers/Durable Objects/TURN for your account. A deployment changes the selected Worker and its runtime secrets; do not point staging variables at a production Worker. Deployments to the same GitHub environment are serialized rather than cancelling an in-flight migration. Secret rotation occurs on the next successful deployment.
 
@@ -88,7 +88,6 @@ Allow school clients outbound HTTPS/WSS to the Worker and WebRTC to the TURN hos
 Create a **new** Vercel project from this repository. Set Root Directory to `src/WhitePad.Web`, Framework to Vite, Build Command to `npm run build`, and Output Directory to `dist`. The checked-in `vercel.json` supplies SPA rewrites and basic response headers. Set these public build variables for the selected environment:
 
 ```text
-VITE_TRANSPORT=webrtc
 VITE_SIGNALLING_URL=https://<your-signalling-worker-host>
 VITE_RTC_RELAY_ONLY=false
 ```
@@ -97,7 +96,7 @@ VITE_RTC_RELAY_ONLY=false
 
 Do not put `CREATE_ROOM_SECRET`, `TURN_API_TOKEN`, a teacher token or any other secret in a `VITE_*` variable. Vite embeds those variables in public JavaScript. Changing build settings requires rebuilding the frontend. Select `VITE_RTC_RELAY_ONLY=true` on a dedicated test preview to force relay; normal production should use `false` to prefer direct connections.
 
-The build remains static React/Vite; no Next.js or Vercel API route is needed. `npm run build` always writes to `dist`, regardless of transport selection. For the existing Kestrel/container deployment, use `npm run build:server` to explicitly write to `WhitePad.Server/wwwroot`; keep `VITE_TRANSPORT` unset for SignalR. The Dockerfile and legacy image workflow use that command.
+The build remains static React/Vite; no Next.js or Vercel API route is needed. `npm run build` always writes to `dist`, regardless of transport selection. WebRTC is the only transport. The legacy server, `build:server`, Docker release workflow and SignalR dependency are removed. Existing external legacy deployments are not automatically shut down.
 
 A Vercel preview may require deployment protection to be configured for participating test devices. Add its exact origin to the matching preview Worker's allowlist. Do not connect unreviewed previews to production room/control storage.
 
@@ -117,7 +116,7 @@ Push runs target `main`; feature branches use pull-request runs. This avoids dup
 
 | Name | Where | Secret? | Purpose |
 |---|---|---|---|
-| `VITE_TRANSPORT` | Frontend build | No | `webrtc`; unset preserves SignalR build |
+| `VITE_TRANSPORT` | Obsolete | No | Ignored; WebRTC is unconditional and this variable can be removed |
 | `VITE_SIGNALLING_URL` | Frontend build | No | HTTPS Worker origin; no trailing slash |
 | `VITE_RTC_RELAY_ONLY` | Frontend build | No | Test override, `true` forces TURN |
 | `ALLOWED_ORIGINS` | Worker configuration | No | Exact browser origins, comma separated |
@@ -133,8 +132,8 @@ For test tooling only: `WEB_URL`, `SIGNALLING_URL`, `CREATE_ROOM_SECRET`, `TEST_
 
 1. Run unit/type/build checks and local real-peer integration tests. Run the relay test with real credentials and the school network/device matrix. Review measured traffic and billing dashboards. Keep a draft PR until outstanding acceptance checks are complete.
 2. Deploy the separate signalling service and a frontend preview from the reviewed commit. Record the account/project, namespace, frontend commit and preview URL. Exercise room creation, joining, question controls, refresh, clear during disconnect and forced relay before assigning a school-facing hostname.
-3. Promote only with explicit release authorisation. Keep the legacy hostname and server running for the transition. The user must receive the updated iPad build or use Safari directly for WebRTC classrooms.
+3. Promote only with explicit release authorisation. The native app must be updated before retiring an existing legacy hostname. The user must receive the updated iPad build or use Safari directly for WebRTC classrooms.
 4. Roll back frontend deployment using Vercel's previous deployment. Roll back Worker code with its version history while retaining the same namespace and compatible stored schema. Do not delete migrations or storage as a rollback step.
-5. If WebRTC service is unsuitable for a lesson, create a **new legacy room** on the old hostname. Rooms and board data are not migrated between transports. Existing migration rooms can finish or expire in 24 hours. Announce the new QR/link to the class through the teacher UI.
+5. Rollback after source retirement requires reverting the retirement commit and deploying the matching old server/frontend/app; there is no runtime SignalR switch. Preserve prior deployment artifacts until the new release is accepted. Rooms and board data are not migrated between architectures. Existing rooms can finish or expire in 24 hours.
 
 No rollback procedure here promises recovery after both devices have lost their local drawing data. This deployment stores room authority in the cloud, not durable copies of handwriting.

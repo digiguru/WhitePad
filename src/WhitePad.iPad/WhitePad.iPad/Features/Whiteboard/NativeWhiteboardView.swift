@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct NativeWhiteboardView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var session: StudentRoomSession
     let onLeave: () -> Void
 
@@ -36,6 +37,12 @@ struct NativeWhiteboardView: View {
                 classroomOverlay
                 bottomControlsOverlay
             }
+        }
+        .onAppear { restoreBoard() }
+        .onChange(of: scenePhase) { _, _ in session.refreshConnection() }
+        .onChange(of: session.recoveryRevision) { _, _ in restoreBoard() }
+        .onChange(of: session.isLocked) { _, locked in
+            if locked { recorder?.reset(); recorder = nil; shapeDraft = nil }
         }
         .onChange(of: session.boardClearRevision) { _, _ in
             clearLocalBoard()
@@ -676,12 +683,12 @@ struct NativeWhiteboardView: View {
         case .stroke(let stroke):
             strokes.append(stroke)
             drawOrder.append(stroke.id)
-            resend(stroke)
+            Task { await session.redoStroke(stroke.id) }
         case .shape(let shape):
             shapes.append(shape)
             drawOrder.append(shape.shapeId)
             Task {
-                await session.sendShape(shape)
+                await session.redoStroke(shape.shapeId)
             }
         }
     }
@@ -694,6 +701,17 @@ struct NativeWhiteboardView: View {
         }
     }
 
+    private func restoreBoard() {
+        guard let board = session.recoveredBoard else { return }
+        strokes = board.strokes; shapes = board.shapes; drawOrder = board.order
+        currentBackground = board.background; currentPaperColor = board.paper
+        undoneItems = board.undoneOrder.compactMap { id in
+            if let stroke = board.hiddenStrokes.first(where:{$0.id == id}) { return .stroke(stroke) }
+            if let shape = board.hiddenShapes.first(where:{$0.id == id}) { return .shape(shape) }
+            return nil
+        }
+        recorder?.reset(); recorder = nil; shapeDraft = nil
+    }
     private func clearLocalBoard() {
         strokes = []
         shapes = []

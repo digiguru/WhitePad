@@ -1,11 +1,12 @@
 import Foundation
+import Combine
 
 @MainActor
 final class StudentRoomSession: ObservableObject {
     let studentId: String
     let displayName: String
     let joinLink: JoinLink
-    private let hubClient: WhiteboardHubClientProtocol
+    private let hubClient: ClassroomClientProtocol
 
     @Published var isLocked: Bool
     @Published var isInWaitingRoomFlow: Bool
@@ -17,6 +18,8 @@ final class StudentRoomSession: ObservableObject {
     @Published var wasKicked = false
     @Published var statusMessage: String?
     @Published var boardClearRevision = 0
+    @Published var recoveredBoard: NativeBoardViewState?
+    @Published var recoveryRevision = 0
 
     init(
         studentId: String,
@@ -26,12 +29,12 @@ final class StudentRoomSession: ObservableObject {
         waitingRoomEnabled: Bool,
         waitingRoomUnlocked: Bool,
         currentQuestion: String?,
-        hubClient: WhiteboardHubClientProtocol
+        hubClient: ClassroomClientProtocol
     ) {
         self.studentId = studentId
         self.displayName = displayName
         self.joinLink = joinLink
-        self.isLocked = false
+        self.isLocked = isLocked
         self.isInWaitingRoomFlow = false
         self.waitingRoomEnabled = false
         self.waitingRoomUnlocked = true
@@ -45,7 +48,6 @@ final class StudentRoomSession: ObservableObject {
         isInWaitingRoomFlow = false
         waitingRoomEnabled = false
         waitingRoomUnlocked = true
-        isLocked = false
     }
 
     func setAnswered(_ value: Bool) async {
@@ -103,7 +105,16 @@ final class StudentRoomSession: ObservableObject {
         }
     }
 
+    func refreshConnection() { hubClient.refreshConnection() }
+    func redoStroke(_ id: String) async {
+        do { try await hubClient.redoStroke(id) } catch { statusMessage = "Could not redo drawing." }
+    }
     private func wireHubEvents() {
+        hubClient.onStatus = { [weak self] status in self?.statusMessage = status }
+        hubClient.onBoardRecovered = { [weak self] board in
+            self?.recoveredBoard = board; self?.recoveryRevision += 1
+            self?.confidenceLevel = board.confidence; self?.hasAnswered = board.answered
+        }
         hubClient.onStudentLocked = { [weak self] message in
             self?.applyStudentLocked(message)
         }
@@ -145,8 +156,5 @@ final class StudentRoomSession: ObservableObject {
         waitingRoomUnlocked = true
         isInWaitingRoomFlow = false
 
-        if !message.waitingRoomEnabled {
-            isLocked = false
-        }
     }
 }

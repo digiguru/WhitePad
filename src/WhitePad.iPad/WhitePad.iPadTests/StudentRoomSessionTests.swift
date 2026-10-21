@@ -6,7 +6,7 @@ final class StudentRoomSessionTests: XCTestCase {
     func testLegacyWaitingRoomStateIsIgnoredOnJoin() {
         let session = makeSession(isLocked: true, waitingRoomEnabled: true, waitingRoomUnlocked: false)
 
-        XCTAssertFalse(session.isLocked)
+        XCTAssertTrue(session.isLocked)
         XCTAssertFalse(session.isInWaitingRoomFlow)
         XCTAssertFalse(session.waitingRoomEnabled)
         XCTAssertTrue(session.waitingRoomUnlocked)
@@ -33,13 +33,13 @@ final class StudentRoomSessionTests: XCTestCase {
         XCTAssertFalse(session.isInWaitingRoomFlow)
     }
 
-    func testDisablingWaitingRoomUnlocksStudent() {
+    func testLegacyWaitingRoomCannotOverrideTeacherLock() {
         let hubClient = FakeHubClient()
         let session = makeSession(hubClient: hubClient, isLocked: true, waitingRoomEnabled: true, waitingRoomUnlocked: false)
 
         hubClient.onWaitingRoomStateChanged?(WaitingRoomStateChanged(waitingRoomEnabled: false, waitingRoomUnlocked: false))
 
-        XCTAssertFalse(session.isLocked)
+        XCTAssertTrue(session.isLocked)
         XCTAssertFalse(session.isInWaitingRoomFlow)
         XCTAssertFalse(session.waitingRoomEnabled)
     }
@@ -186,7 +186,7 @@ final class StudentRoomSessionTests: XCTestCase {
 }
 
 @MainActor
-private final class FakeHubClient: WhiteboardHubClientProtocol {
+private final class FakeHubClient: ClassroomClientProtocol {
     var onStudentLocked: ((StudentLocked) -> Void)?
     var onWaitingRoomStateChanged: ((WaitingRoomStateChanged) -> Void)?
     var onQuestionChanged: ((QuestionChanged) -> Void)?

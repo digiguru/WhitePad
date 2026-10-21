@@ -20,7 +20,7 @@
 		5A10000B2C0000000000000B /* RoomSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A10001C2C0000000000000C /* RoomSettings.swift */; };
 		5A10000C2C0000000000000C /* JoinRoomResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A10001D2C0000000000000D /* JoinRoomResponse.swift */; };
 		5A10000D2C0000000000000D /* StudentSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A10001E2C0000000000000E /* StudentSession.swift */; };
-		5A10000E2C0000000000000E /* WhiteboardHubClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A10001F2C0000000000000F /* WhiteboardHubClient.swift */; };
+		5A10000E2C0000000000000E /* WebRTCClassroomClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A10001F2C0000000000000F /* WebRTCClassroomClient.swift */; };
 		5A10000F2C0000000000000F /* HubMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1000212C00000000000021 /* HubMessages.swift */; };
 		5A1000222C00000000000022 /* StudentRoomSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1000232C00000000000023 /* StudentRoomSession.swift */; };
 		5A1000242C00000000000024 /* DrawingStroke.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1000252C00000000000025 /* DrawingStroke.swift */; };
@@ -28,9 +28,12 @@
 		5A1000282C00000000000028 /* DrawingStrokeRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1000292C00000000000029 /* DrawingStrokeRecorder.swift */; };
 		5A2000012C00000000000001 /* DeepLinkRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2000112C00000000000011 /* DeepLinkRouterTests.swift */; };
 		5A2000022C00000000000002 /* StudentRoomSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2000122C00000000000012 /* StudentRoomSessionTests.swift */; };
-		5A2000032C00000000000003 /* WhiteboardHubClientMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2000132C00000000000013 /* WhiteboardHubClientMessageTests.swift */; };
-		5A2000042C00000000000004 /* WhiteboardHubClientCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2000142C00000000000014 /* WhiteboardHubClientCommandTests.swift */; };
 		5A2000052C00000000000005 /* DrawingStrokeRecorderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2000152C00000000000015 /* DrawingStrokeRecorderTests.swift */; };
+		F10000000000000000000001 /* ClassroomClient.swift in Build */ = {isa = PBXBuildFile; fileRef = F00000000000000000000001; };
+		F10000000000000000000002 /* NativeBoard.swift in Build */ = {isa = PBXBuildFile; fileRef = F00000000000000000000002; };
+		F10000000000000000000003 /* NativeRecoveryStore.swift in Build */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003; };
+		F10000000000000000000004 /* whitepad-protocol.js in Build */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004; };
+		F20000000000000000000001 = {isa = PBXBuildFile; productRef = F20000000000000000000002; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,7 +62,7 @@
 		5A10001C2C0000000000000C /* RoomSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomSettings.swift; sourceTree = "<group>"; };
 		5A10001D2C0000000000000D /* JoinRoomResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinRoomResponse.swift; sourceTree = "<group>"; };
 		5A10001E2C0000000000000E /* StudentSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentSession.swift; sourceTree = "<group>"; };
-		5A10001F2C0000000000000F /* WhiteboardHubClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteboardHubClient.swift; sourceTree = "<group>"; };
+		5A10001F2C0000000000000F /* WebRTCClassroomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCClassroomClient.swift; sourceTree = "<group>"; };
 		5A1000212C00000000000021 /* HubMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubMessages.swift; sourceTree = "<group>"; };
 		5A1000232C00000000000023 /* StudentRoomSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentRoomSession.swift; sourceTree = "<group>"; };
 		5A1000252C00000000000025 /* DrawingStroke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingStroke.swift; sourceTree = "<group>"; };
@@ -68,9 +71,11 @@
 		5A2000102C00000000000010 /* WhitePad.iPadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WhitePad.iPadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A2000112C00000000000011 /* DeepLinkRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouterTests.swift; sourceTree = "<group>"; };
 		5A2000122C00000000000012 /* StudentRoomSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentRoomSessionTests.swift; sourceTree = "<group>"; };
-		5A2000132C00000000000013 /* WhiteboardHubClientMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteboardHubClientMessageTests.swift; sourceTree = "<group>"; };
-		5A2000142C00000000000014 /* WhiteboardHubClientCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhiteboardHubClientCommandTests.swift; sourceTree = "<group>"; };
 		5A2000152C00000000000015 /* DrawingStrokeRecorderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingStrokeRecorderTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000001 /* ClassroomClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitePad.iPad/Services/ClassroomClient.swift; sourceTree = SOURCE_ROOT; };
+		F00000000000000000000002 /* NativeBoard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitePad.iPad/Services/NativeBoard.swift; sourceTree = SOURCE_ROOT; };
+		F00000000000000000000003 /* NativeRecoveryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitePad.iPad/Services/NativeRecoveryStore.swift; sourceTree = SOURCE_ROOT; };
+		F00000000000000000000004 /* whitepad-protocol.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = WhitePad.iPad/Resources/whitepad-protocol.js; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +83,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F20000000000000000000001 /* WebRTC */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -95,6 +101,10 @@
 			isa = PBXGroup;
 			children = (
 				5A1000312C00000000000031 /* WhitePad.iPad */,
+				F00000000000000000000004 /* whitepad-protocol.js */,
+				F00000000000000000000003 /* NativeRecoveryStore.swift */,
+				F00000000000000000000002 /* NativeBoard.swift */,
+				F00000000000000000000001 /* ClassroomClient.swift */,
 				5A2000312C00000000000031 /* WhitePad.iPadTests */,
 				5A1000322C00000000000032 /* Products */,
 			);
@@ -179,7 +189,7 @@
 		5A1000382C00000000000038 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				5A10001F2C0000000000000F /* WhiteboardHubClient.swift */,
+				5A10001F2C0000000000000F /* WebRTCClassroomClient.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -197,8 +207,6 @@
 			children = (
 				5A2000112C00000000000011 /* DeepLinkRouterTests.swift */,
 				5A2000122C00000000000012 /* StudentRoomSessionTests.swift */,
-				5A2000132C00000000000013 /* WhiteboardHubClientMessageTests.swift */,
-				5A2000142C00000000000014 /* WhiteboardHubClientCommandTests.swift */,
 				5A2000152C00000000000015 /* DrawingStrokeRecorderTests.swift */,
 			);
 			path = WhitePad.iPadTests;
@@ -220,6 +228,7 @@
 			dependencies = (
 			);
 			name = WhitePad.iPad;
+			packageProductDependencies = (F20000000000000000000002);
 			productName = WhitePad.iPad;
 			productReference = 5A1000102C00000000000010 /* WhitePad.iPad.app */;
 			productType = "com.apple.product-type.application";
@@ -271,6 +280,7 @@
 			);
 			mainGroup = 5A1000302C00000000000030;
 			productRefGroup = 5A1000322C00000000000032 /* Products */;
+			packageReferences = (F20000000000000000000003);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -285,6 +295,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F10000000000000000000004 /* whitepad-protocol.js in Build */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -302,6 +313,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F10000000000000000000003 /* NativeRecoveryStore.swift in Build */,
+				F10000000000000000000002 /* NativeBoard.swift in Build */,
+				F10000000000000000000001 /* ClassroomClient.swift in Build */,
 				5A1000012C00000000000001 /* WhitePadApp.swift in Sources */,
 				5A1000022C00000000000002 /* AppRootView.swift in Sources */,
 				5A1000032C00000000000003 /* AppRouter.swift in Sources */,
@@ -315,7 +329,7 @@
 				5A10000B2C0000000000000B /* RoomSettings.swift in Sources */,
 				5A10000C2C0000000000000C /* JoinRoomResponse.swift in Sources */,
 				5A10000D2C0000000000000D /* StudentSession.swift in Sources */,
-				5A10000E2C0000000000000E /* WhiteboardHubClient.swift in Sources */,
+				5A10000E2C0000000000000E /* WebRTCClassroomClient.swift in Sources */,
 				5A10000F2C0000000000000F /* HubMessages.swift in Sources */,
 				5A1000222C00000000000022 /* StudentRoomSession.swift in Sources */,
 				5A1000242C00000000000024 /* DrawingStroke.swift in Sources */,
@@ -330,8 +344,6 @@
 			files = (
 				5A2000012C00000000000001 /* DeepLinkRouterTests.swift in Sources */,
 				5A2000022C00000000000002 /* StudentRoomSessionTests.swift in Sources */,
-				5A2000032C00000000000003 /* WhiteboardHubClientMessageTests.swift in Sources */,
-				5A2000042C00000000000004 /* WhiteboardHubClientCommandTests.swift in Sources */,
 				5A2000052C00000000000005 /* DrawingStrokeRecorderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -594,6 +606,9 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+        F20000000000000000000002 = {isa = XCSwiftPackageProductDependency; package = F20000000000000000000003; productName = WebRTC; };
+        F20000000000000000000003 = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/stasel/WebRTC.git"; requirement = {kind = exactVersion; version = 153.0.0; }; };
+
 	};
 	rootObject = 5A1000702C00000000000070 /* Project object */;
 }

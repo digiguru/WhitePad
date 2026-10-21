@@ -7,14 +7,4 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
-  server: {
-    proxy: {
-      '/hub': {
-        target: 'https://localhost:5001',
-        changeOrigin: true,
-        secure: false,
-        ws: true,
-      },
-    },
-  },
 });

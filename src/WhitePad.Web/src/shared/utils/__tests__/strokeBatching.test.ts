@@ -11,7 +11,7 @@ describe('StrokeBatcher', () => {
     vi.unstubAllEnvs();
   });
 
-  it.each([['webrtc', 100], ['signalr', 50]] as const)('uses the %s batching interval independently of local configuration', (transport, interval) => {
+  it.each([['webrtc', 100], ['unset', 100]] as const)('uses the %s batching interval independently of local configuration', (transport, interval) => {
     vi.stubEnv('VITE_TRANSPORT', transport);
     const onBatch = vi.fn();
     const batcher = new StrokeBatcher('default-interval', onBatch);

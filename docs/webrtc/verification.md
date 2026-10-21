@@ -13,10 +13,10 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 | Deployment and hosted-smoke helpers | 6 passed; credentials/origins, Worker URL, temporary secret cleanup and authority/CORS/TURN response checks |
 | Worker dry-run bundle | Passed without uploading |
 | Worker restart and persistent authority | Passed locally |
-| Legacy .NET tests | Passed in GitHub CI; SDK unavailable locally |
+| TypeScript backend checks | Worker typecheck, deploy/quota/restart and room/role isolation checks replace retired .NET tests |
 | Real-browser integration | 11 direct/local tests passed; separate credential-enabled forced-TURN test passed |
 | Swift Foundation join-link executable | Passed for web, legacy, custom scheme and encoded tokens |
-| Full SwiftUI/PencilKit app / XCTest | Not run successfully: this machine has Command Line Tools, no full Xcode/XCTest SDK |
+| Full SwiftUI/iPad app / XCTest | Configured in iPad simulator CI; local machine has Command Line Tools without Xcode/iOS SDKs |
 | Physical Safari/iPad/Pencil and school network | Not available locally |
 | Hosted Worker and Vercel deployment | Main `8a4ab07` deployed; hosted creation/teacher authority/CORS/TURN credential checks passed in run 39670323257. Vercel public Worker URL corrected and rebuilt; hosted built-frontend room creation, student joining, teacher canvas drawing and both refresh recovery paths passed on 2026-10-21 |
 | Authenticated TURN | Real Cloudflare credentials and forced relay with drawing passed locally; hosted Worker/school fallback and relay load pending |
@@ -128,3 +128,9 @@ The migration replaced whole-board redraw/pixel polling with incremental ink ren
 Complete a full lesson-duration run, authenticated TURN/network fallback, real school network testing, delayed/lossy/mobile network transitions and physical Safari/iPad testing. Verify Worker redeploy/hibernation recovery against the hosted service, not just the emulator. Check all tools and eraser/background composition visually, teacher clear during an active gesture, lock/unlock while a device sleeps, kicking, new questions with pending answers, refresh while a stroke is in flight, IndexedDB eviction and the documented board limit. Use the minimum supported iPad and teacher hardware.
 
 A draft PR may be reviewed before these checks, but do not promote the migration as capacity-certified or silently retire the legacy deployment.
+
+## Native transport and source retirement (2026-10-21)
+
+The native Swift/libwebrtc implementation compiled against the pinned 153.0.0 macOS framework. The binary checksum matched SwiftPM. JavaScriptCore shared-reducer checks passed for quantisation, undo/redo, clear/rollback, snapshot validation and indicators. One real native student delivered drawing to the hosted React teacher normally and with forced authenticated TURN; the latter required a selected native relay candidate. These single-pair checks are automated interoperability evidence, not a load test or physical iPad acceptance. The fixture injects in-memory persistence and does not prove iOS Keychain/Data Protection behavior. Full app and XCTest validation is configured on an iPad simulator in CI. No load test was resumed.
+
+C#/SignalR source, backend tests, server-side static build, solution/Docker release and browser transport dependency are removed. Existing hosted services are not automatically stopped; older installed native apps require an update.

@@ -18,7 +18,7 @@ flowchart LR
 
 Pointer events draw immediately on the student canvas. Encoding, batching, local recovery and peer delivery happen separately. Drawing contents never enter the Worker, a Vercel Function or cloud storage. Teacher commands use the durable control plane so a disconnected student cannot miss a clear or lock permanently. Confidence and answered status travel over the data channel with board operations.
 
-The legacy ASP.NET/SignalR deployment remains available, including its native Swift client. This branch does not promote a Vercel deployment or modify that server's contracts. WebRTC is selected by the explicit build setting `VITE_TRANSPORT=webrtc`; leaving it unset builds the existing deployment.
+WebRTC is now the only web transport. The C#/SignalR server, fallback dependency and .NET/Docker release paths are retired in source. The native Swift client uses libwebrtc and the same bundled protocol reducer through JavaScriptCore. This source change does not shut down existing hosted services; old installed iPad app builds require updating. See ipad-transition.md for native integration and rollback limits.
 
 ## Hosting decision, checked 20 October 2026
 
