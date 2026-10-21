@@ -902,22 +902,30 @@ private struct FloatingGlassSurface: ViewModifier {
     let cornerRadius: CGFloat
     let interactive: Bool
 
+    @ViewBuilder
     func body(content: Content) -> some View {
+        #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
-            content
-                .glassEffect(
-                    interactive ? .regular.interactive() : .regular,
-                    in: .rect(cornerRadius: cornerRadius)
-                )
+            content.glassEffect(
+                interactive ? .regular.interactive() : .regular,
+                in: .rect(cornerRadius: cornerRadius)
+            )
         } else {
-            content
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
-                .overlay {
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(.white.opacity(0.45), lineWidth: 1)
-                }
-                .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 10)
+            fallback(content)
         }
+        #else
+        fallback(content)
+        #endif
+    }
+
+    private func fallback(_ content: Content) -> some View {
+        content
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(.white.opacity(0.45), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 10)
     }
 }
 

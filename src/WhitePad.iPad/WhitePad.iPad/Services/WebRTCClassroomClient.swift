@@ -31,6 +31,8 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
     private var ice: [RTCIceServer] = []
     private var iceExpires = Date.distantPast
     private var sentSeq = 0
+    private var helloPending = false
+    private var recoveryAvailable = true
     private var recovery: [[String:Any]] = []
     private var recoveryIndex = 0
     private var snapshot: [UInt8]?
@@ -101,6 +103,8 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
     }
     func startListening() {
         guard loop == nil, !stopped else { return }
+        onStudentLocked?(StudentLocked(studentId:student,isLocked:true))
+        onStatus?("Connecting to classroom")
         publishBoard()
         pump = Task { [weak self] in
             while !Task.isCancelled {
@@ -139,7 +143,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
             }
         }
     }
-    private func connect() async throws {
+    private func refreshIce() async throws {
         if Date() >= iceExpires {
             let turn = try await api("turn")
             guard let servers = turn["iceServers"] as? [[String:Any]], !servers.isEmpty else { throw WhitePadError.connectionFailed("TURN unavailable") }
@@ -148,6 +152,10 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
             }
             iceExpires = Date(timeIntervalSince1970:(turn["expires"] as? Double ?? 0)/1000-600)
         }
+    }
+    private func connect() async throws {
+        try await refreshIce()
+        guard !stopped else { return }
         let ticket = try await api("ticket")
         guard let value = ticket["ticket"] as? String else { throw WhitePadError.connectionFailed("No signalling ticket") }
         var components = URLComponents(url:endpoint.appendingPathComponent("rooms/\(room)/socket"),resolvingAgainstBaseURL:false)!
@@ -193,9 +201,12 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
         }
         onQuestionChanged?(QuestionChanged(question:control["question"] as? String))
         onStudentLocked?(StudentLocked(studentId:student,isLocked:!online || locked))
-        try persist(); publishBoard(); ready = false; clearRecovery(); sendHello()
+        do { try persist() } catch { recoveryAvailable = false; onStatus?("Local recovery unavailable") }
+        publishBoard(); ready = false; clearRecovery(); sendHello()
     }
     private func answer(_ sdp: String, attempt: String) async throws {
+        try await refreshIce()
+        guard !stopped else { return }
         dropPeer(); self.attempt = attempt
         let config = RTCConfiguration(); config.sdpSemantics = .unifiedPlan; config.iceServers = ice
         config.iceTransportPolicy = relayOnly ? .relay : .all
@@ -223,7 +234,12 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
         sendSignal(["type":"signal","to":"teacher","attempt":attempt,"description":["type":"answer","sdp":local.sdp]])
     }
     private func header(_ type: String) -> [String:Any] { ["v":1,"type":type,"revision":revision,"controlEpoch":controlEpoch,"questionRevision":questionRevision] }
-    private func sendHello() { var msg = header("hello"); msg["seq"] = board.seq; sendFrame(msg) }
+    private func sendHello() { helloPending = true; drainHello() }
+    private func drainHello() {
+        guard helloPending else { return }
+        var msg = header("hello"); msg["seq"] = board.seq
+        if sendFrame(msg) { helloPending = false }
+    }
     private func sendSignal(_ msg: [String:Any]) {
         guard let socket, let data = try? JSONSerialization.data(withJSONObject:msg), data.count <= 32768, let text = String(data:data,encoding:.utf8) else { return }
         socket.send(.string(text)) { [weak self] error in if error != nil { Task { @MainActor in self?.disconnect() } } }
@@ -268,7 +284,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
                 snapshotId = UUID().uuidString; snapshotIndex = -1
                 snapshotTotal = Int(ceil(Double(snapshot!.count)/8000))
             }
-            onStatus?("Connected")
+            onStatus?(recoveryAvailable ? "Connected" : "Connected — local recovery unavailable")
         default: throw WhitePadError.connectionFailed("Teacher cannot write a student board")
         }
     }
@@ -280,7 +296,8 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
             if Date().timeIntervalSince(lastPong)>60 { disconnect(); return }
             sendSignal(["type":"ping"]); lastPing = Date()
         }
-        guard ready, let channel, channel.readyState == .open else { return }
+        drainHello()
+        guard !helloPending, ready, let channel, channel.readyState == .open else { return }
         // No unbounded delivery queue: canonical board is the bounded resend source.
         for _ in 0..<16 {
             guard channel.bufferedAmount < 256*1024 else { return }
@@ -335,7 +352,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
         guard saveTask == nil else { return }
         saveTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds:100_000_000)
-            do { try self?.persist() } catch { self?.onStatus?("Local recovery unavailable") }
+            do { try self?.persist() } catch { self?.recoveryAvailable = false; self?.onStatus?("Local recovery unavailable") }
             self?.saveTask = nil
         }
     }
@@ -353,7 +370,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
             }
         }
     }
-    private func dropPeer() { ready = false; channel?.delegate = nil; channel?.close(); channel = nil; peer?.delegate = nil; peer?.close(); peer = nil; clearRecovery() }
+    private func dropPeer() { ready = false; helloPending = false; channel?.delegate = nil; channel?.close(); channel = nil; peer?.delegate = nil; peer?.close(); peer = nil; clearRecovery() }
     private func disconnect() { online = false; dropPeer(); socket?.cancel(with:.goingAway,reason:nil); socket = nil; onStudentLocked?(StudentLocked(studentId:student,isLocked:true)) }
     func stop() { stopped = true; loop?.cancel(); loop = nil; pump?.cancel(); pump = nil; saveTask?.cancel(); saveTask = nil; try? persist(); disconnect(); session.invalidateAndCancel() }
 }

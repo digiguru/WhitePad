@@ -7,13 +7,13 @@ Vite builds a static React application for a **separate Vercel project**. One Cl
 ```mermaid
 flowchart LR
   V[Vercel: static React assets] --> T[Teacher browser]
-  V --> S[Student Safari / browser]
+  V --> S[Student browser / native iPad]
   T <-->|Authentication, discovery, SDP, controls| D[Cloudflare Worker + room Durable Object]
   S <-->|Authentication, discovery, SDP, controls| D
   S <-->|Vector board operations: WebRTC DTLS/SCTP| T
   S <-.->|Authenticated relay when needed| R[Cloudflare TURN]
   R <-.-> T
-  S --> I[Student IndexedDB canonical board]
+  S --> I[Student local canonical board]
 ```
 
 Pointer events draw immediately on the student canvas. Encoding, batching, local recovery and peer delivery happen separately. Drawing contents never enter the Worker, a Vercel Function or cloud storage. Teacher commands use the durable control plane so a disconnected student cannot miss a clear or lock permanently. Confidence and answered status travel over the data channel with board operations.
@@ -35,7 +35,7 @@ Cloudflare TURN is the only other required runtime integration. The Worker obtai
 | Creation access code | School administrator; room creation only | Entered by teacher, not saved or embedded in build |
 | Teacher token | Random capability for one room | Teacher tab's sessionStorage; never in join links |
 | Join token | Random capability to enrol in one room | Student QR/link; cannot open teacher or session endpoints |
-| Student session token | Random capability for one enrolled student | Student localStorage; resumes that student's IndexedDB board |
+| Student session token | Random capability for one enrolled student | Web localStorage or native Keychain; resumes the student's local board |
 | WebSocket ticket | One identity, one use, 30 seconds | WebSocket subprotocol, never URL query |
 | TURN credential | Authenticated membership, two-hour expiry | RTCPeerConnection configuration |
 
