@@ -68,7 +68,8 @@ jobs:
           done
           npm run test:browser --prefix src/WhitePad.Signalling
   native-join-compatibility:
-    runs-on: macos-latest
+    # Foundation-only checks work on Intel; avoid the exhausted hosted arm64 runner pool.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Swift Foundation compatibility
