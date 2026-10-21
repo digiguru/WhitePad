@@ -1,5 +1,5 @@
 // GitHub Actions deployment. Credentials never appear in command arguments or repository files.
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, appendFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -38,14 +38,20 @@ export function deploy(env = process.env, run = spawnSync) {
       '--name', settings.name, '--var', `WEB_ORIGIN:${settings.web}`,
       '--var', `ALLOWED_ORIGINS:${settings.allowed}`, '--secrets-file', filename];
     const result = run(process.execPath, args, {
-      cwd: project, stdio: 'inherit',
+      cwd: project, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', maxBuffer: 1024 * 1024,
       env: { ...env, WRANGLER_SEND_METRICS: 'false', CI: 'true' },
     });
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
     if (result.error || result.status !== 0) throw Error('Cloudflare deployment failed; inspect the Wrangler step output');
+    const urls = result.stdout?.match(/https:\/\/[a-z0-9.-]+\.workers\.dev/g) ?? [];
+    const url = urls.find(value => new URL(value).hostname.startsWith(settings.name + '.'));
+    if (!url) throw Error('Wrangler did not report the expected workers.dev deployment URL');
+    return url;
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try { deploy(); } catch (error) { console.error(error.message); process.exitCode = 1; }
+  try { const url = deploy(); if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `signalling_url=${url}\n`); } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

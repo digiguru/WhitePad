@@ -1,6 +1,7 @@
 name: WebRTC migration checks
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -15,6 +16,22 @@ on:
 permissions:
   contents: read
 jobs:
+  backend:
+    uses: ./.github/workflows/ci.yml
+  release-checks:
+    needs: [backend, web-and-peers, native-join-compatibility]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every verification job to pass
+        env:
+          BACKEND: ${{ needs.backend.result }}
+          WEB: ${{ needs.web-and-peers.result }}
+          NATIVE: ${{ needs.native-join-compatibility.result }}
+        run: |
+          test "$BACKEND" = success
+          test "$WEB" = success
+          test "$NATIVE" = success
   web-and-peers:
     runs-on: ubuntu-latest
     steps:
@@ -78,18 +95,17 @@ jobs:
           /tmp/whitepad-verify-join
 
   deploy-cloudflare:
-    needs: [web-and-peers, native-join-compatibility]
+    needs: [release-checks]
     if: >-
       (github.event_name == 'workflow_dispatch' &&
        (inputs.environment == 'cloudflare-staging' || github.ref == 'refs/heads/main')) ||
-      (github.event_name == 'push' && vars.CLOUDFLARE_AUTO_DEPLOY == 'true' &&
-       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/codex/webrtc-classrooms'))
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
-      name: ${{ inputs.environment || 'cloudflare-staging' }}
+      name: ${{ inputs.environment || vars.CLOUDFLARE_MAIN_ENVIRONMENT || 'cloudflare-staging' }}
     concurrency:
-      group: cloudflare-${{ inputs.environment || 'cloudflare-staging' }}
+      group: cloudflare-${{ inputs.environment || vars.CLOUDFLARE_MAIN_ENVIRONMENT || 'cloudflare-staging' }}
       cancel-in-progress: false
     defaults:
       run:
@@ -104,6 +120,7 @@ jobs:
       - name: Install locked deployment tooling
         run: npm ci
       - name: Deploy Worker and encrypted runtime secrets
+        id: worker
         run: npm run deploy:ci
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -114,3 +131,10 @@ jobs:
           CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
           WEB_ORIGIN: ${{ vars.WEB_ORIGIN }}
           ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
+      - name: Verify hosted room authority and TURN credential issuance
+        run: npm run test:hosted
+        env:
+          SIGNALLING_URL: ${{ steps.worker.outputs.signalling_url }}
+          CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+          WEB_ORIGIN: ${{ vars.WEB_ORIGIN }}
+          CREATE_ROOM_SECRET: ${{ secrets.CREATE_ROOM_SECRET }}
