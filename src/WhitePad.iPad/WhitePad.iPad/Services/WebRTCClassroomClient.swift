@@ -11,6 +11,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
     var onKicked: (() -> Void)?
     var onBoardRecovered: ((NativeBoardViewState) -> Void)?
     var onStatus: ((String) -> Void)?
+    nonisolated private let ingress = NativeIngressGate()
     private static let factory: RTCPeerConnectionFactory = { RTCInitializeSSL(); RTCSetMinDebugLogLevel(.none); return RTCPeerConnectionFactory() }()
     private let endpoint: URL
     private let origin: String
@@ -217,11 +218,12 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
                 if let error { continuation.resume(throwing:error) } else { continuation.resume() }
             }
         }
-        let description: RTCSessionDescription = try await withCheckedThrowingContinuation { continuation in
+        let answerSDP: String = try await withCheckedThrowingContinuation { continuation in
             pc.answer(for:RTCMediaConstraints(mandatoryConstraints:nil,optionalConstraints:nil)) { description,error in
-                if let description { continuation.resume(returning:description) } else { continuation.resume(throwing:error ?? WhitePadError.connectionFailed("Answer failed")) }
+                if let description { continuation.resume(returning:description.sdp) } else { continuation.resume(throwing:error ?? WhitePadError.connectionFailed("Answer failed")) }
             }
         }
+        let description = RTCSessionDescription(type:.answer,sdp:answerSDP)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void,Error>) in
             pc.setLocalDescription(description) { error in
                 if let error { continuation.resume(throwing:error) } else { continuation.resume() }
@@ -385,23 +387,43 @@ extension WebRTCClassroomClient: RTCPeerConnectionDelegate, RTCDataChannelDelega
     nonisolated func peerConnection(_ pc: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {}
     nonisolated func peerConnection(_ pc: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]) {}
     nonisolated func peerConnection(_ pc: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
-        if newState == .failed || newState == .disconnected { Task { @MainActor [weak self] in if self?.peer === pc { self?.disconnect() } } }
+        let identity = ObjectIdentifier(pc)
+        if newState == .failed || newState == .disconnected {
+            Task { @MainActor [weak self] in
+                if self?.peer.map(ObjectIdentifier.init) == identity { self?.disconnect() }
+            }
+        }
     }
     nonisolated func peerConnection(_ pc: RTCPeerConnection, didOpen dc: RTCDataChannel) {
+        let identity = ObjectIdentifier(pc)
+        let transfer = NativeChannelHandoff(dc)
         Task { @MainActor [weak self] in
-            guard let self, self.peer === pc, self.channel == nil, dc.label == "whitepad-v1", dc.isOrdered,
+            let dc = transfer.channel
+            guard let self, self.peer.map(ObjectIdentifier.init) == identity, self.channel == nil,
+                  dc.label == "whitepad-v1", dc.isOrdered,
                   dc.maxRetransmits == UInt16.max, dc.maxPacketLifeTime == UInt16.max else { dc.close(); return }
             self.channel = dc; dc.delegate = self
             if dc.readyState == .open { self.sendHello() }
         }
     }
     nonisolated func dataChannelDidChangeState(_ dc: RTCDataChannel) {
-        Task { @MainActor [weak self] in guard let self, self.channel === dc else { return }; if dc.readyState == .open { self.sendHello() } }
+        let identity = ObjectIdentifier(dc)
+        let open = dc.readyState == .open, closed = dc.readyState == .closed
+        Task { @MainActor [weak self] in
+            guard let self, self.channel.map(ObjectIdentifier.init) == identity else { return }
+            if open { self.sendHello() }
+            if closed { self.disconnect() }
+        }
     }
     nonisolated func dataChannel(_ dc: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
+        guard !buffer.isBinary, buffer.data.count <= 16*1024, ingress.acquire() else { dc.close(); return }
+        let identity = ObjectIdentifier(dc)
+        let bytes = buffer.data.withUnsafeBytes { Data($0) }
+        let gate = ingress
         Task { @MainActor [weak self] in
-            guard let self, self.channel === dc else { return }
-            do { try self.receive(buffer.data) } catch { self.disconnect() }
+            defer { gate.release() }
+            guard let self, self.channel.map(ObjectIdentifier.init) == identity else { return }
+            do { try self.receive(bytes) } catch { self.disconnect() }
         }
     }
 }
@@ -414,3 +436,25 @@ private final class NoClassroomRedirects: NSObject, URLSessionTaskDelegate {
 }
 
 private struct NativeServiceRejection: Error { let status: Int }
+
+// The SDK creates this proxy on its callback queue; Swift only accesses it after
+// handing ownership to the main actor. libwebrtc internally marshals proxy calls.
+private struct NativeChannelHandoff: @unchecked Sendable {
+    let channel: RTCDataChannel
+    init(_ channel: RTCDataChannel) { self.channel = channel }
+}
+// Limit work before scheduling main-actor tasks, including while the UI is busy.
+final class NativeIngressGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var tokens = 400.0
+    private var updated = Date()
+    private var pending = 0
+    func acquire() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        let now = Date()
+        tokens = min(400,tokens+max(0,now.timeIntervalSince(updated))*200); updated = now
+        guard tokens >= 1, pending < 64 else { return false }
+        tokens -= 1; pending += 1; return true
+    }
+    func release() { lock.lock(); pending -= 1; lock.unlock() }
+}

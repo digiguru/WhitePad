@@ -34,6 +34,7 @@
 		F10000000000000000000003 /* NativeRecoveryStore.swift in Build */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003; };
 		F10000000000000000000004 /* whitepad-protocol.js in Build */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004; };
 		F20000000000000000000001 = {isa = PBXBuildFile; productRef = F20000000000000000000002; };
+F30000000000000000000002 = {isa = PBXBuildFile; fileRef = F30000000000000000000001; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +77,7 @@
 		F00000000000000000000002 /* NativeBoard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitePad.iPad/Services/NativeBoard.swift; sourceTree = SOURCE_ROOT; };
 		F00000000000000000000003 /* NativeRecoveryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitePad.iPad/Services/NativeRecoveryStore.swift; sourceTree = SOURCE_ROOT; };
 		F00000000000000000000004 /* whitepad-protocol.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = WhitePad.iPad/Resources/whitepad-protocol.js; sourceTree = SOURCE_ROOT; };
+F30000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhitePad.iPadTests/NativeTransportTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				5A1000312C00000000000031 /* WhitePad.iPad */,
+F30000000000000000000001 /* NativeTransportTests */ ,
 				F00000000000000000000004 /* whitepad-protocol.js */,
 				F00000000000000000000003 /* NativeRecoveryStore.swift */,
 				F00000000000000000000002 /* NativeBoard.swift */,
@@ -342,6 +345,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+F30000000000000000000002 /* NativeTransportTests */,
 				5A2000012C00000000000001 /* DeepLinkRouterTests.swift in Sources */,
 				5A2000022C00000000000002 /* StudentRoomSessionTests.swift in Sources */,
 				5A2000052C00000000000005 /* DrawingStrokeRecorderTests.swift in Sources */,
