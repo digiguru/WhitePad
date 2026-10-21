@@ -10,7 +10,7 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 | Existing drawing/teacher-state regressions plus protocol/renderer/API tests | 46 passed |
 | Worker TypeScript | Passed |
 | Creation quota policy | 3 passed; local/hosted isolation and UTC reset/retry checks |
-| CI deployment helper | 2 passed; missing credentials/origins rejected, temporary secrets cleaned on success/failure |
+| Deployment and hosted-smoke helpers | 6 passed; credentials/origins, Worker URL, temporary secret cleanup and authority/CORS/TURN response checks |
 | Worker dry-run bundle | Passed without uploading |
 | Worker restart and persistent authority | Passed locally |
 | Legacy .NET tests | Passed in GitHub CI; SDK unavailable locally |
@@ -18,7 +18,7 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 | Swift Foundation join-link executable | Passed for web, legacy, custom scheme and encoded tokens |
 | Full SwiftUI/PencilKit app / XCTest | Not run successfully: this machine has Command Line Tools, no full Xcode/XCTest SDK |
 | Physical Safari/iPad/Pencil and school network | Not available locally |
-| Hosted Worker and Vercel deployment | Not deployed; requires selected accounts/environment approval |
+| Hosted Worker and Vercel deployment | Main `8a4ab07` deployed; hosted creation/teacher authority/CORS/TURN credential checks passed in run 39670323257. Vercel public Worker URL corrected and rebuilt; hosted built-frontend room creation, student joining, teacher canvas drawing and both refresh recovery paths passed on 2026-10-21 |
 | Authenticated TURN | Real Cloudflare credentials and forced relay with drawing passed locally; hosted Worker/school fallback and relay load pending |
 
 Integration tests verify role/room isolation, no teacher/session access with a join token, origin rejection, authenticated sender binding, drawing, undo/redo, teacher refresh, student refresh/IndexedDB recovery, chunked snapshots, offline lock/clear/question reconciliation, live locks, kicking and delayed/duplicated delivery after a clear. The UI test draws into the real student canvas and checks real teacher canvas pixels, then verifies local ink survives refresh.
@@ -69,6 +69,18 @@ TEST_TURN=true npm run test:browser
 ```
 
 That test forces relay policy on both ends and requires a selected relay candidate and delivered drawing operations. It does not pass using an empty ICE list or a mocked TURN response. Run it on school Wi-Fi with UDP blocked as well as the ordinary network, then compare provider egress counters.
+
+## Built frontend hosted acceptance
+
+After configuring the current staff secret in ignored `src/WhitePad.Signalling/.dev.vars` (or `CREATE_ROOM_SECRET` in the environment):
+
+```bash
+cd src/WhitePad.Signalling
+npx playwright install chromium
+WEB_URL=https://white-pad-woad.vercel.app node tools/hosted-browser.mjs
+```
+
+This opt-in test creates one ordinary room (consuming one daily creation allowance), creates two isolated Chromium contexts, uses the published UI to join/draw, checks teacher canvas pixels, and verifies both refresh paths. It uses the built frontend without Vite source imports. It closes browsers afterward; room metadata expires under normal retention. No traces, screenshots, tokens, SDP, candidate details or drawing contents are logged. This tests a hosted pair, not school-network fallback or capacity.
 
 ## Load harness
 
