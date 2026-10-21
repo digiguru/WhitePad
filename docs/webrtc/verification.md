@@ -10,7 +10,7 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 | Existing drawing/teacher-state regressions plus protocol/renderer tests | 34 passed |
 | Worker TypeScript | Passed |
 | Worker restart and persistent authority | Passed locally |
-| Legacy .NET tests | SDK unavailable locally; CI required |
+| Legacy .NET tests | Passed in GitHub CI; SDK unavailable locally |
 | Real-browser integration | 11 passed; authenticated TURN test skipped without credentials |
 | Swift Foundation join-link executable | Passed for web, legacy, custom scheme and encoded tokens |
 | Full SwiftUI/PencilKit app / XCTest | Not run successfully: this machine has Command Line Tools, no full Xcode/XCTest SDK |
@@ -21,6 +21,8 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 Integration tests verify role/room isolation, no teacher/session access with a join token, origin rejection, authenticated sender binding, drawing, undo/redo, teacher refresh, student refresh/IndexedDB recovery, chunked snapshots, offline lock/clear/question reconciliation, live locks, kicking and delayed/duplicated delivery after a clear. The UI test draws into the real student canvas and checks real teacher canvas pixels, then verifies local ink survives refresh.
 
 Protocol tests cover idempotency, gaps, epochs, malformed operations/snapshots, unknown objects, undo/redo materialisation, quantisation, operation capacity, rollback of unacknowledged offline changes, send-queue bounds and rate/backoff bounds. Incremental renderer tests ensure undo/replacement and changes below later objects trigger a full redraw. A slow RTC sender test keeps `bufferedAmount` above the high-water mark and confirms bounded queue/recovery behavior; this is not a physical congested-Wi-Fi test.
+
+Legacy backend/frontend checks also passed in [GitHub CI](https://github.com/digiguru/WhitePad/actions/runs/39589410350) for commit `3e7f6f4`. The full [WebRTC migration workflow](https://github.com/digiguru/WhitePad/actions/runs/39589410188), including real Chromium peers and macOS Foundation compatibility, also passed for that commit. Authenticated TURN remains skipped without credentials.
 
 ## Commands
 

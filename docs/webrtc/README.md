@@ -10,7 +10,7 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 - [x] Existing classroom tools and controls retained, with incremental teacher rendering and operation-journal persistence.
 - [x] Native iPad transitional routing to Safari for WebRTC rooms; legacy native rooms remain supported. This is not a native WebRTC implementation.
 - [x] 34 frontend tests, both frontend build modes, Worker TypeScript and 11 real-browser integration tests passed locally. One authenticated TURN test is skipped pending credentials.
-- [x] Local Worker restart/persistent-authority test and standalone Swift join-link checks passed.
+- [x] Local Worker restart/persistent-authority test and standalone Swift join-link checks passed. The complete WebRTC workflow also passed in GitHub CI.
 - [x] Architecture, protocol, deployment, environment, rollback and cost-model documentation; real-peer/browser load harness and CI checks.
 
 ## Remaining implementation and review tasks
@@ -26,7 +26,7 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 - [ ] Deploy an isolated Worker and Vercel preview after account/environment selection; verify hosted restart, redeploy, hibernation and reconnect behavior. Production promotion remains a separate decision.
 - [ ] Run a full lesson-duration test at approximately 15 classrooms/400 participants on representative teacher hardware and school networks, including 10%, 25% and sustained drawing, direct and relay paths.
 - [ ] Test physical Safari/iPad/Apple Pencil, sleep/background/network transitions, all tools, controls during gestures and IndexedDB eviction. Full Xcode/XCTest and native app build require an Xcode environment; only standalone Foundation compatibility checks ran here.
-- [ ] Run legacy .NET checks in CI or an environment with the .NET SDK; it is unavailable locally.
+- [x] Legacy backend and frontend CI passed on the published feature branch; the .NET SDK remains unavailable locally.
 - [ ] Replace traffic/billing assumptions with measured production-like signalling, TURN and Vercel usage. No fixed total cost is promised.
 
 A successful earlier short intermittent run connected 385/385 students; a full single classroom sustained run connected 28/28. Neither establishes sustained 400-user capacity. Drawings have local recovery, not durable cloud backup; losing both student and teacher local data loses that board.
