@@ -29,9 +29,13 @@ test('deployment uploads secrets with code, keeps them out of arguments, and cle
       for (const secret of Object.values(deploymentSettings(fixture()).secrets)) assert.ok(!args.join(' ').includes(secret));
       assert.ok(args.includes('whitepad-signalling-staging'));
       assert.equal(options.env.CI, 'true');
-      return { status };
+      return { status, stdout: 'https://whitepad-signalling-staging.example.workers.dev\n' };
     });
     if (status) assert.throws(invoke, /deployment failed/); else invoke();
     assert.equal(existsSync(filename), false);
   }
+});
+test('deployment does not trust a missing or different Worker URL in tooling output', () => {
+  for (const stdout of ['', 'https://other.example.workers.dev'])
+    assert.throws(() => deploy(fixture(), () => ({ status: 0, stdout })), /expected workers.dev/);
 });

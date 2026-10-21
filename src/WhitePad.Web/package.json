@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build:server": "tsc && vite build --outDir ../WhitePad.Server/wwwroot"
+    "build:server": "tsc && vite build --outDir ../WhitePad.Server/wwwroot",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.0",

@@ -37,7 +37,7 @@ Do not use an HTTP LAN IP to assess iPad recovery: IndexedDB and browser transpo
 
 ### GitHub Actions setup (no local deployment commands)
 
-The **WebRTC migration checks** workflow builds the static frontend (`dist`), the legacy server frontend, and the Worker bundle; runs unit, restart, native compatibility and real-browser checks; and uploads a seven-day build artifact. Cloudflare deployment runs only after both check jobs pass. Pull requests never deploy or receive deployment credentials.
+The **WebRTC migration checks** workflow builds the static frontend (`dist`), the legacy server frontend, and the Worker bundle; runs backend, unit, restart, native compatibility and real-browser checks; and uploads a seven-day build artifact. The `release-checks` job requires all three verification jobs to pass; Cloudflare deployment depends on that gate. Pull requests never deploy or receive deployment credentials.
 
 1. In GitHub repository **Settings → Environments**, create `cloudflare-staging`. Create `cloudflare-production` separately when ready for release. Use distinct Worker names and credentials for the two environments; each Worker owns its own Durable Object room namespace. Keep each name stable across redeployments. Restrict production to `main`; environment reviewers can provide the school's release gate.
 2. Add these **environment secrets** to each environment you intend to deploy:
@@ -63,8 +63,9 @@ The deployment token and TURN token serve different purposes. Do not paste their
 Origins must be exact HTTPS origins without paths, trailing slashes or wildcards. A comma-separated allowlist must include `WEB_ORIGIN`. Use a stable test-project hostname or include the exact preview origin you are testing; arbitrary Vercel previews are not trusted automatically. The helper fails before deployment if required configuration is missing. Production deployments never enable `LOCAL_DIRECT_ONLY`.
 
 4. Choose how to deploy:
-   - **Automatic staging:** set repository **Settings → Secrets and variables → Actions → Variables → `CLOUDFLARE_AUTO_DEPLOY`** to `true`. Successful push runs on `codex/webrtc-classrooms` or `main` then deploy to `cloudflare-staging`. This is disabled until you set that variable. Push your next commit after configuration, or rerun the push workflow. Automatic deployment never targets production.
-   - **Manual:** once this workflow exists on the repository's default branch, open **Actions → WebRTC migration checks → Run workflow**, select the branch and target environment, then run it. Choose staging first. Production is allowed only from `main`; selecting production from another branch skips the deployment job.
+   - **Automatic main deployment:** every successful push/merge to `main` deploys the configured Cloudflare Worker after `release-checks`. It defaults to the `cloudflare-staging` GitHub environment for the existing pilot. The old `CLOUDFLARE_AUTO_DEPLOY` switch is no longer used, so a missing switch cannot silently skip deployment.
+   - To use the separate production backend for main releases, configure `cloudflare-production` first and set repository variable `CLOUDFLARE_MAIN_ENVIRONMENT=cloudflare-production`. Keep Vercel's Production `VITE_SIGNALLING_URL` pointing to the same backend selected for main. Leaving the variable unset uses staging; keep Vercel's Production pointing to the staging Worker during that pilot.
+   - **Manual:** open **Actions → WebRTC migration checks → Run workflow**, select the branch and target environment. Production is allowed only from `main`. All verification jobs run first. Pull requests run tests and build Vercel previews without Cloudflare deployment credentials.
 
 5. Find the deployed `workers.dev` URL in the deployment job output. Set Vercel's `VITE_SIGNALLING_URL` to that URL, with `VITE_TRANSPORT=webrtc` and `VITE_RTC_RELAY_ONLY=false`, then redeploy the frontend. Vercel's Git integration builds it automatically on subsequent pushes; do not add Vercel deployment credentials to the Cloudflare workflow.
 
@@ -99,6 +100,18 @@ Do not put `CREATE_ROOM_SECRET`, `TURN_API_TOKEN`, a teacher token or any other 
 The build remains static React/Vite; no Next.js or Vercel API route is needed. `npm run build` always writes to `dist`, regardless of transport selection. For the existing Kestrel/container deployment, use `npm run build:server` to explicitly write to `WhitePad.Server/wwwroot`; keep `VITE_TRANSPORT` unset for SignalR. The Dockerfile and legacy image workflow use that command.
 
 A Vercel preview may require deployment protection to be configured for participating test devices. Add its exact origin to the matching preview Worker's allowlist. Do not connect unreviewed previews to production room/control storage.
+
+## Vercel release gates
+
+Keep the existing Vercel Git integration for preview and production builds. Do not add a second Vercel CLI deployment workflow: that would create duplicate deployments and require another deployment token.
+
+In **Vercel → white-pad → Settings → Build and Deployment → Deployment Checks**, import GitHub checks **`release-checks`** and **`deploy-cloudflare`**, and require them for Production. Select a commit from this pipeline if the check names are not yet listed. Production automatic aliasing must remain enabled. Vercel may build in parallel, but must hold production domain assignment until the tests and the matching commit's Worker deployment/smoke check succeed. Never use Force Promote to bypass a failing gate.
+
+The `typecheck` npm script also makes Vercel's existing native TypeCheck check effective. This repository does not define a style-lint script; the native Lint entry alone provides no lint coverage and may be skipped. TypeScript checks, protocol/unit tests, .NET regressions, Swift Foundation and real RTC/browser tests are the actual verification gates.
+
+The Cloudflare job extracts the expected workers.dev origin from the locked Wrangler tool's output, then checks authenticated room creation, teacher session authority, exact-origin CORS and real TURN credential issuance. It refuses redirects or another Worker name. Each smoke check creates one room with the ordinary 24-hour expiry and consumes one of the daily creation allowance. It is not a load or physical-iPad test. Runtime secrets and returned room/TURN credentials are not uploaded in build artifacts.
+
+Push runs target `main`; feature branches use pull-request runs. This avoids duplicate push/PR check names on the same feature commit. `.github/workflows/ci.yml` is a reusable backend workflow called by the main checks workflow, so backend failures cannot race an independent deployment. GitHub branch protection should require `release-checks` before merging; Vercel's two deployment checks gate publication after merging.
 
 ## Environment variables
 
