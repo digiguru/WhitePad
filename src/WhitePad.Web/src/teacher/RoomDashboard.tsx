@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import JoinMode from './JoinMode';
 import ViewerMode from './ViewerMode';
 import { useTeacherRoomConnection } from './hooks/useTeacherRoomConnection';
@@ -14,6 +14,13 @@ type ViewMode = 'join' | 'viewer';
 
 function RoomDashboard({ roomId, roomName, joinToken, joinUrl }: RoomDashboardProps) {
   const { connection, students, boards, error } = useTeacherRoomConnection(roomId);
+  const [transportStatus, setTransportStatus] = useState('');
+  useEffect(() => {
+    if(!connection) return;
+    const changed = ({status}: {status: string}) => setTransportStatus(status);
+    connection.on('transportStatus', changed);
+    return () => connection.off('transportStatus', changed);
+  }, [connection]);
   const [viewMode, setViewMode] = useState<ViewMode>('join');
 
   if (error) {
@@ -26,6 +33,7 @@ function RoomDashboard({ roomId, roomName, joinToken, joinUrl }: RoomDashboardPr
 
   return (
     <div className="dashboard-container">
+      {transportStatus && <div className="transport-status" role="status">{transportStatus}</div>}
       {viewMode === 'join' && (
         <JoinMode
           roomName={roomName}

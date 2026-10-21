@@ -95,6 +95,7 @@ export interface AnsweredChanged {
 }
 
 export interface Student {
+  isConnected?: boolean;
   studentId: string;
   displayName: string;
   connectionId?: string;

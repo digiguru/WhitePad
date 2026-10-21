@@ -1,0 +1,116 @@
+name: WebRTC migration checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Cloudflare deployment target (production requires the main branch)
+        type: choice
+        options:
+          - cloudflare-staging
+          - cloudflare-production
+        default: cloudflare-staging
+        required: true
+permissions:
+  contents: read
+jobs:
+  web-and-peers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install locked dependencies
+        run: |
+          npm ci --prefix src/WhitePad.Web
+          npm ci --prefix src/WhitePad.Signalling
+      - name: Protocol, drawing regressions and both builds
+        run: |
+          npm test --prefix src/WhitePad.Web
+          npm run build --prefix src/WhitePad.Web
+          test -f src/WhitePad.Web/dist/index.html
+          npm run build:server --prefix src/WhitePad.Web
+          test -f src/WhitePad.Server/wwwroot/index.html
+          VITE_TRANSPORT=webrtc npm run build --prefix src/WhitePad.Web
+          npm run check --prefix src/WhitePad.Signalling
+          npm run test:deploy --prefix src/WhitePad.Signalling
+          npm run test:quota --prefix src/WhitePad.Signalling
+          npm run build --prefix src/WhitePad.Signalling
+      - name: Upload static frontend and Worker build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: webrtc-builds-${{ github.sha }}
+          path: |
+            src/WhitePad.Web/dist/
+            src/WhitePad.Signalling/dist/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Persisted authority after emulator restart
+        working-directory: src/WhitePad.Signalling
+        run: npm run test:restart
+      - name: Install browser
+        working-directory: src/WhitePad.Signalling
+        run: npx playwright install --with-deps chromium
+      - name: Real local peer and rendering tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd src/WhitePad.Signalling && npx wrangler dev --port 8787 --var CREATE_ROOM_SECRET:local-test-only --var LOCAL_DIRECT_ONLY:true) >/tmp/whitepad-signalling.log 2>&1 &
+          signal_pid=$!
+          (cd src/WhitePad.Web && VITE_TRANSPORT=webrtc VITE_SIGNALLING_URL=http://localhost:8787 npm run dev -- --host 127.0.0.1) >/tmp/whitepad-web.log 2>&1 &
+          web_pid=$!
+          trap 'kill "$signal_pid" "$web_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl -s http://localhost:8787 >/dev/null && curl -fs http://localhost:5173 >/dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:browser --prefix src/WhitePad.Signalling
+  native-join-compatibility:
+    # Foundation-only checks work on Intel; avoid the exhausted hosted arm64 runner pool.
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Swift Foundation compatibility
+        run: |
+          swiftc src/WhitePad.iPad/WhitePad.iPad/Features/Join/JoinLink.swift src/WhitePad.iPad/WhitePad.iPad/App/DeepLinkRouter.swift src/WhitePad.iPad/WhitePad.iPad/Shared/WhitePadError.swift src/WhitePad.iPad/tools/verify-join.swift -o /tmp/whitepad-verify-join
+          /tmp/whitepad-verify-join
+
+  deploy-cloudflare:
+    needs: [web-and-peers, native-join-compatibility]
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.environment == 'cloudflare-staging' || github.ref == 'refs/heads/main')) ||
+      (github.event_name == 'push' && vars.CLOUDFLARE_AUTO_DEPLOY == 'true' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/codex/webrtc-classrooms'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: ${{ inputs.environment || 'cloudflare-staging' }}
+    concurrency:
+      group: cloudflare-${{ inputs.environment || 'cloudflare-staging' }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: src/WhitePad.Signalling
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install locked deployment tooling
+        run: npm ci
+      - name: Deploy Worker and encrypted runtime secrets
+        run: npm run deploy:ci
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CREATE_ROOM_SECRET: ${{ secrets.CREATE_ROOM_SECRET }}
+          TURN_KEY_ID: ${{ secrets.TURN_KEY_ID }}
+          TURN_API_TOKEN: ${{ secrets.TURN_API_TOKEN }}
+          CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+          WEB_ORIGIN: ${{ vars.WEB_ORIGIN }}
+          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}

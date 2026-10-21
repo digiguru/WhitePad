@@ -29,6 +29,9 @@ final class AppRouter: ObservableObject {
     }
 
     func join(joinLink: JoinLink, displayName: String) async throws {
+        guard !joinLink.usesWebRTC else {
+            throw WhitePadError.joinRejected("Open this WebRTC classroom in Safari.")
+        }
         let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
             throw WhitePadError.joinRejected("Please enter your name.")

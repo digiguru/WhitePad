@@ -28,6 +28,16 @@ final class DeepLinkRouterTests: XCTestCase {
         XCTAssertEqual(link.joinToken, "ABC123")
     }
 
+    func testWebRTCLinksUseExplicitBrowserTransition() throws {
+        let link = try router.parse("https://school.example/join?roomId=room-123&token=ABC123&transport=webrtc")
+        XCTAssertTrue(link.usesWebRTC)
+        XCTAssertEqual(link.webRTCURL?.path, "/web-join")
+        XCTAssertEqual(link.webRTCURL?.host, "school.example")
+        let legacy = try router.parse("https://school.example/join?roomId=room-123&token=ABC123")
+        XCTAssertFalse(legacy.usesWebRTC)
+        XCTAssertNil(legacy.webRTCURL)
+    }
+
     func testRejectsMissingRoomId() {
         XCTAssertThrowsError(try router.parse("http://localhost:5173/join?token=ABC123")) { error in
             XCTAssertEqual((error as? WhitePadError)?.message, "The join link is missing a room ID.")

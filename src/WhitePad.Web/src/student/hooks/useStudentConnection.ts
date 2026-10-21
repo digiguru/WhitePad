@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HubConnection } from '@microsoft/signalr';
+import type { ClassroomConnection as HubConnection } from '../../services/connection';
 import { createSignalRConnection } from '../../services/signalr';
 import { HubEvents } from '../../shared/constants/hubContract';
 

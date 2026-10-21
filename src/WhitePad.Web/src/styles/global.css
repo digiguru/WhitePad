@@ -1440,3 +1440,5 @@ body {
     max-width: calc(100vw - 32px);
   }
 }
+
+.transport-status { position: fixed; right: 12px; bottom: 8px; z-index: 80; padding: 4px 8px; background: #ffffffdd; color: #334155; border-radius: 6px; font-size: 12px; pointer-events: none; }

@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { HubConnection } from '@microsoft/signalr';
+import type { ClassroomConnection as HubConnection } from '../services/connection';
 import { StrokeBatcher } from '../shared/utils/strokeBatching';
 import { StrokePoint, StrokeBatch, Shape, QuestionChanged, BackgroundType, PaperColor } from '../shared/types/messages';
 import { renderShape } from '../shared/utils/shapeRenderer';
@@ -56,15 +56,19 @@ function DrawingPage({
   const pointerDownInProgressRef = useRef(false); // Prevent re-entrancy
   const activePointerIdRef = useRef<number | null>(null);
 
+  const [recovered] = useState(() => connection.recoveredBoard?.());
+  const [boardFull, setBoardFull] = useState(false);
+  const boardFullRef = useLatest(boardFull);
+  const [transportStatus, setTransportStatus] = useState('');
   // Drawing state
   const [currentColor, setCurrentColor] = useState('#000000');
   const [currentThickness, setCurrentThickness] = useState(2);
   const [currentTool, setCurrentTool] = useState<ToolType>('pen');
-  const [currentBackground, setCurrentBackground] = useState<BackgroundType>('none');
-  const [currentPaperColor, setCurrentPaperColor] = useState<PaperColor>('white');
-  const [confidenceLevel, setConfidenceLevel] = useState<'none' | 'red' | 'amber' | 'green'>('none');
+  const [currentBackground, setCurrentBackground] = useState<BackgroundType>(recovered?.backgroundType ?? 'none');
+  const [currentPaperColor, setCurrentPaperColor] = useState<PaperColor>(recovered?.paperColor ?? 'white');
+  const [confidenceLevel, setConfidenceLevel] = useState<'none' | 'red' | 'amber' | 'green'>(() => connection.recoveredIndicators?.().confidence ?? 'none');
   const [currentQuestion, setCurrentQuestion] = useState<string | null>(initialQuestion);
-  const [hasAnswered, setHasAnswered] = useState(false);
+  const [hasAnswered, setHasAnswered] = useState(() => connection.recoveredIndicators?.().answered ?? false);
 
   const {
     isLocked,
@@ -132,6 +136,13 @@ function DrawingPage({
   useEffect(() => {
     const handleBoardCleared = (message: { studentId: string }) => {
       if (message.studentId === studentId) {
+        batcherRef.current?.cancel();
+      batcherRef.current = null;
+        currentStrokeIdRef.current = null;
+        isDrawingRef.current = false;
+        activePointerIdRef.current = null;
+        setShapeInProgress(null);
+        setBoardFull(false);
         // Clear local state
         strokesRef.current.clear();
         shapesRef.current.clear();
@@ -158,9 +169,10 @@ function DrawingPage({
 
   // Listen for teacher question updates
   useEffect(() => {
-    const handleQuestionChanged = (message: QuestionChanged) => {
-      setCurrentQuestion(message.question ?? null);
-      setHasAnswered(false);
+    const handleQuestionChanged = (message: QuestionChanged & { isInitial?: boolean }) => {
+      const next = message.question ?? null;
+      if (!message.isInitial) setHasAnswered(false);
+      setCurrentQuestion(next);
     };
 
     connection.on(HubEvents.QuestionChanged, handleQuestionChanged);
@@ -482,7 +494,7 @@ function DrawingPage({
 
     pointerDownInProgressRef.current = true;
 
-    if (isLockedRef.current) {
+    if (isLockedRef.current || boardFullRef.current) {
       pointerDownInProgressRef.current = false;
       return; // Prevent drawing when locked
     }
@@ -611,7 +623,7 @@ function DrawingPage({
   }, []); // Empty deps - uses refs for all values
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (isLockedRef.current) return; // Prevent interaction when locked
+    if (isLockedRef.current || boardFullRef.current) return; // Prevent interaction when locked
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -710,6 +722,7 @@ function DrawingPage({
 
     if (batcherRef.current) {
       batcherRef.current.flush(true);
+      batcherRef.current?.cancel();
       batcherRef.current = null;
     }
 
@@ -781,6 +794,10 @@ function DrawingPage({
     // Redraw with the new history immediately
     redrawCanvas(newHistory);
 
+    if (connection.isPeer) {
+      connection.invoke('RedoStroke', strokeToRedo).catch(() => setTransportStatus('Redo could not be synchronised'));
+      return;
+    }
     const restoredStroke = strokesRef.current.get(strokeToRedo);
     if (restoredStroke) {
       restoredStroke.batches.forEach(batch => {
@@ -801,6 +818,13 @@ function DrawingPage({
 
   const handleClear = useCallback(() => {
     if (isLockedRef.current) return;
+    batcherRef.current?.cancel();
+    batcherRef.current = null;
+    currentStrokeIdRef.current = null;
+    isDrawingRef.current = false;
+    pointerDownInProgressRef.current = false;
+    activePointerIdRef.current = null;
+    setShapeInProgress(null);
 
     strokesRef.current.clear();
     shapesRef.current.clear();
@@ -854,6 +878,55 @@ function DrawingPage({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
 
+  useEffect(() => {
+    const hydrate = () => {
+      const saved = connection.recoveredBoard?.() ?? recovered;
+      if (!saved) return;
+      setCurrentBackground(saved.backgroundType);
+      setCurrentPaperColor(saved.paperColor);
+      const indicators = connection.recoveredIndicators?.();
+      if (indicators) {
+        setConfidenceLevel(indicators.confidence);
+        setHasAnswered(indicators.answered);
+      }
+      strokesRef.current.clear();
+      for (const [id, batch] of Object.entries(saved.strokes)) {
+        strokesRef.current.set(id, {
+          strokeId: id, batches: [batch], color: batch.color,
+          lineWidth: batch.lineWidth, isEraser: !!batch.isEraser,
+        });
+      }
+      shapesRef.current = new Map(Object.entries(saved.shapes));
+      setStrokeHistory(saved.drawOrder);
+      strokeHistoryRef.current = saved.drawOrder;
+      setUndoneStrokes(Object.keys(saved.strokes).concat(Object.keys(saved.shapes))
+        .filter(id => !saved.drawOrder.includes(id)));
+      redrawCanvas(saved.drawOrder);
+    };
+    hydrate();
+    connection.on('localBoardReconciled', hydrate);
+    const capacity = ({full}: {full: boolean}) => setBoardFull(full);
+    connection.on('boardCapacity', capacity);
+    const status = ({ status }: { status: string }) => setTransportStatus(status);
+    connection.on('transportStatus', status);
+    return () => {
+      connection.off('transportStatus', status);
+      connection.off('localBoardReconciled', hydrate);
+      connection.off('boardCapacity', capacity);
+    };
+  }, [connection]);
+
+  useEffect(() => {
+    if (!isLocked && !boardFull) return;
+    // Discard an unfinished gesture when authority changes. Never flush it after a clear.
+    batcherRef.current?.cancel();
+    batcherRef.current = null;
+    currentStrokeIdRef.current = null;
+    isDrawingRef.current = false;
+    activePointerIdRef.current = null;
+    setShapeInProgress(null);
+  }, [isLocked, boardFull]);
+
   // Track isLocked changes
   useEffect(() => {
     debugLog('DrawingPage', 'isLocked changed', isLocked);
@@ -861,6 +934,7 @@ function DrawingPage({
 
   return (
     <div className={`drawing-container ${isClassroomLocked ? 'drawing-locked' : ''}`}>
+      {transportStatus && <div className="transport-status" role="status">{transportStatus}</div>}
       <Toolbar
         displayName={displayName}
         currentColor={currentColor}

@@ -1,0 +1,78 @@
+{
+  "rooms": 1,
+  "participants": 5,
+  "seconds": 10,
+  "duty": 0.25,
+  "relayOnly": false,
+  "started": "2026-10-21T09:54:06.520Z",
+  "establishedAt": "2026-10-21T09:54:07.163Z",
+  "summary": {
+    "connected": 4,
+    "expected": 4,
+    "relayed": 0,
+    "applicationBytes": 39744,
+    "bytesPerActiveDrawingMinute": 238464,
+    "oneWayLatencyMs": {
+      "p50": null,
+      "p95": null,
+      "samples": 0
+    },
+    "signallingBytes": 7485,
+    "drawingErrors": 0
+  },
+  "harness": "Chromium real RTCDataChannels; 1 actual React teacher grids; students generated in one page per room; one local host",
+  "pageErrors": 0,
+  "connectionEstablishmentMs": {
+    "samples": 4,
+    "min": 12.899999991059303,
+    "p50": 15.599999994039536,
+    "p95": 25.899999991059303,
+    "max": 25.899999991059303
+  },
+  "postBatchDeliveryLatencyMs": {
+    "samples": 0,
+    "min": null,
+    "p50": null,
+    "p95": null,
+    "max": null
+  },
+  "teacherTaskCpuSecondsIncludingSetup": {
+    "samples": 1,
+    "min": 0.43728100000000003,
+    "p50": 0.43728100000000003,
+    "p95": 0.43728100000000003,
+    "max": 0.43728100000000003
+  },
+  "teacherJsHeapBytesAtEnd": {
+    "samples": 1,
+    "min": 7747520,
+    "p50": 7747520,
+    "p95": 7747520,
+    "max": 7747520
+  },
+  "teacherRendering": {
+    "frames": 734,
+    "framesAbove50ms": 0,
+    "longTasks": 0,
+    "canvasCounts": [
+      4
+    ],
+    "expectedBoards": [
+      4
+    ]
+  },
+  "peerPeakBufferedBytes": {
+    "samples": 4,
+    "min": 939,
+    "p50": 1037,
+    "p95": 1037,
+    "max": 1037
+  },
+  "turnBillableBytes": null,
+  "notes": [
+    "Local delivery timestamps exclude the initial 100ms point batching and final browser presentation.",
+    "One host runs all peers; CPU/heap are browser metrics, not full native process memory.",
+    "TURN billing requires credentials and provider egress counters; zero relays does not test TURN.",
+    "A 60-second run does not establish full-lesson stability."
+  ]
+}

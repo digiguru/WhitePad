@@ -1,0 +1,106 @@
+{
+  "rooms": 15,
+  "participants": 400,
+  "seconds": 60,
+  "duty": 0.25,
+  "relayOnly": false,
+  "started": "2026-10-21T11:02:01.884Z",
+  "establishedAt": "2026-10-21T11:02:24.357Z",
+  "summary": {
+    "connected": 385,
+    "expected": 385,
+    "relayed": 0,
+    "applicationBytes": 26688585,
+    "bytesPerActiveDrawingMinute": 277284,
+    "oneWayLatencyMs": {
+      "p50": 5,
+      "p95": 38,
+      "samples": 80940
+    },
+    "signallingBytes": 2834739,
+    "drawingErrors": 0
+  },
+  "harness": "Chromium real RTCDataChannels; 15 actual React teacher grids; students generated in one page per room; one local host",
+  "pageErrors": 0,
+  "connectionEstablishmentMs": {
+    "samples": 385,
+    "min": 11.100000008940697,
+    "p50": 23.399999991059303,
+    "p95": 161.40000000596046,
+    "max": 261.79999999701977
+  },
+  "postBatchDeliveryLatencyMs": {
+    "samples": 80940,
+    "min": 0,
+    "p50": 5,
+    "p95": 38,
+    "max": 121
+  },
+  "teacherTaskCpuSecondsIncludingSetup": {
+    "samples": 15,
+    "min": 2.09906,
+    "p50": 2.272301,
+    "p95": 2.393851,
+    "max": 2.393851
+  },
+  "teacherJsHeapBytesAtEnd": {
+    "samples": 15,
+    "min": 9293068,
+    "p50": 17151928,
+    "p95": 23698880,
+    "max": 23698880
+  },
+  "teacherRendering": {
+    "frames": 65931,
+    "framesAbove50ms": 10,
+    "longTasks": 5,
+    "canvasCounts": [
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      25,
+      25,
+      25,
+      25,
+      25
+    ],
+    "expectedBoards": [
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      26,
+      25,
+      25,
+      25,
+      25,
+      25
+    ]
+  },
+  "peerPeakBufferedBytes": {
+    "samples": 385,
+    "min": 1119,
+    "p50": 1125,
+    "p95": 1125,
+    "max": 1125
+  },
+  "turnBillableBytes": null,
+  "notes": [
+    "Local delivery timestamps exclude the initial 100ms point batching and final browser presentation.",
+    "One host runs all peers; CPU/heap are browser metrics, not full native process memory.",
+    "TURN billing requires credentials and provider egress counters; zero relays does not test TURN.",
+    "A 60-second run does not establish full-lesson stability."
+  ]
+}

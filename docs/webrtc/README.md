@@ -1,0 +1,43 @@
+# WebRTC migration status and remaining work
+
+Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-in; the existing SignalR deployment remains available. No hosted deployment or service purchase has been performed.
+
+## Completed
+
+- [x] Static React/Vite build, TypeScript signalling service using Cloudflare Durable Objects, persistent room/control authority and authenticated student-to-teacher WebRTC channels.
+- [x] Separate teacher, join and student-session credentials; role/room checks, bounded signalling, short-lived TURN integration and configurable environment variables.
+- [x] Versioned drawing protocol, local rendering, bounded backpressure, replay/snapshots, IndexedDB recovery and teacher-control reconciliation.
+- [x] Existing classroom tools and controls retained, with incremental teacher rendering and operation-journal persistence.
+- [x] Native iPad transitional routing to Safari for WebRTC rooms; legacy native rooms remain supported. This is not a native WebRTC implementation.
+- [x] 46 frontend tests, both frontend build modes, Worker TypeScript and 11 real-browser integration tests passed locally. A separate authenticated forced-TURN browser test also passed using real Cloudflare relay credentials. CI skips that credential-dependent test.
+- [x] Local Worker restart/persistent-authority test and standalone Swift join-link checks passed. The complete WebRTC workflow also passed in GitHub CI.
+- [x] Architecture, protocol, deployment, environment, rollback and cost-model documentation; real-peer/browser load harness and CI checks.
+- [x] Default frontend build writes to `dist`; explicit `build:server` preserves the .NET/Docker output. GitHub Actions builds artifacts and supports configured staging/production Cloudflare deployment; see [setup instructions](deployment.md#github-actions-setup-no-local-deployment-commands).
+
+## Remaining implementation and review tasks
+
+- [x] Final isolated 400-participant intermittent run: 385/385 student peers, no drawing errors, 5 ms median / 38 ms p95 post-batch delivery over 60 seconds at 25% duty.
+- [x] Consolidated compact load summaries; raw reports remain local and ignored. Interrupted development runs are excluded from capacity evidence.
+- [x] Reviewed and committed the feature branch; [draft PR #1](https://github.com/digiguru/WhitePad/pull/1) includes validation, limitations and rollback instructions.
+- [ ] Diagnose the sustained 400-participant failure and repeat on distributed load generators. The latest isolated sustained run retained only **109/385 student peers** after 60 seconds. This is an unresolved capacity gate; single-host resource saturation and application bottlenecks have not been separated.
+
+## Release gates requiring credentials or external environments
+
+- [x] Real Cloudflare credential issuance and one teacher/student pair using forced authenticated TURN passed locally on 2026-10-21.
+- [ ] Validate hosted TURN, blocked-UDP school-network fallback, relay load and provider traffic counters. Keep secrets out of Git and chat.
+- [ ] Deploy an isolated Worker and Vercel preview after account/environment selection; verify hosted restart, redeploy, hibernation and reconnect behavior. Production promotion remains a separate decision.
+- [ ] Run a full lesson-duration test at approximately 15 classrooms/400 participants on representative teacher hardware and school networks, including 10%, 25% and sustained drawing, direct and relay paths.
+- [ ] Test physical Safari/iPad/Apple Pencil, sleep/background/network transitions, all tools, controls during gestures and IndexedDB eviction. Full Xcode/XCTest and native app build require an Xcode environment; only standalone Foundation compatibility checks ran here.
+- [x] Legacy backend and frontend CI passed on the published feature branch; the .NET SDK remains unavailable locally.
+- [ ] Replace traffic/billing assumptions with measured production-like signalling, TURN and Vercel usage. No fixed total cost is promised.
+
+A successful earlier short intermittent run connected 385/385 students; a full single classroom sustained run connected 28/28. Neither establishes sustained 400-user capacity. Drawings have local recovery, not durable cloud backup; losing both student and teacher local data loses that board.
+
+## Documentation
+
+- [Architecture and security](architecture.md)
+- [Drawing and recovery protocol](protocol.md)
+- [Setup, environment variables, deployment and rollback](deployment.md)
+- [Native iPad transition](ipad-transition.md)
+- [Verification commands, measurements and acceptance](verification.md)
+- [Cost model and assumptions](costs.md)

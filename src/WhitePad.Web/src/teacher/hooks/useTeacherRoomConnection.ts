@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { HubConnection } from '@microsoft/signalr';
+import type { ClassroomConnection as HubConnection } from '../../services/connection';
 import { createSignalRConnection } from '../../services/signalr';
 import {
   ParticipantJoined,
@@ -42,6 +42,22 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
   useEffect(() => {
     let isDisposed = false;
     const conn = createSignalRConnection('/hub/whiteboard');
+    let boardFlush: ReturnType<typeof setTimeout> | null = null;
+    let pendingBoards: ((previous: TeacherBoardStates) => TeacherBoardStates)[] = [];
+    const flushBoards = () => {
+      if (boardFlush) clearTimeout(boardFlush);
+      boardFlush = null;
+      const updates = pendingBoards; pendingBoards = [];
+      if (!isDisposed && updates.length) setBoards(previous => updates.reduce((state, update) => update(state), previous));
+    };
+    // Commit all arriving boards together, instead of rerendering the class for every peer batch.
+    const updateBoards = (update: (previous: TeacherBoardStates) => TeacherBoardStates) => {
+      if (!conn.isPeer) { setBoards(update); return; }
+      pendingBoards.push(update);
+      if (pendingBoards.length >= 512) flushBoards();
+      else if (!boardFlush) boardFlush = setTimeout(flushBoards, 50);
+    };
+
     setStudents([]);
     setBoards({});
     setConnection(null);
@@ -53,7 +69,7 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
         displayName: data.displayName,
         connectedAt: data.connectedAt,
         inputMode: data.inputMode,
-        isLocked: false,
+        isLocked: data.isLocked ?? false,
         hasAnswered: data.hasAnswered ?? false,
         confidenceLevel: data.confidenceLevel ?? 'none',
       };
@@ -61,7 +77,7 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
         ...prev.filter(existing => existing.studentId !== student.studentId),
         student
       ]);
-      setBoards(prev => (
+      updateBoards(prev => (
         prev[data.studentId]
           ? { ...prev, [data.studentId]: emptyTeacherBoard() }
           : prev
@@ -70,14 +86,22 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
 
     conn.on(HubEvents.ParticipantLeft, (data: ParticipantLeft) => {
       setStudents(prev => prev.filter(s => s.studentId !== data.studentId));
-      setBoards(prev => {
+      updateBoards(prev => {
         const { [data.studentId]: _removed, ...remaining } = prev;
         return remaining;
       });
     });
 
+    conn.on('participantConnection', ({studentId, isConnected}) => {
+      setStudents(prev => prev.some(s => s.studentId === studentId && s.isConnected !== isConnected) ? prev.map(s => s.studentId === studentId ? {...s,isConnected} : s) : prev);
+    });
+
+    conn.on('boardRecovered', ({ studentId, board }) => {
+      updateBoards(prev => ({ ...prev, [studentId]: board }));
+    });
+
     conn.on(HubEvents.ReceiveStrokeBatch, (batch: StrokeBatch) => {
-      setBoards(prev => updateStudentBoard(
+      updateBoards(prev => updateStudentBoard(
         prev,
         batch.studentId,
         board => applyStrokeBatchToBoard(board, batch)
@@ -85,7 +109,7 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
     });
 
     conn.on(HubEvents.StrokeUndone, (message: StrokeUndone) => {
-      setBoards(prev => updateStudentBoard(
+      updateBoards(prev => updateStudentBoard(
         prev,
         message.studentId,
         board => applyUndoToBoard(board, message)
@@ -93,7 +117,7 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
     });
 
     conn.on(HubEvents.BoardCleared, (message: BoardCleared) => {
-      setBoards(prev => updateStudentBoard(
+      updateBoards(prev => updateStudentBoard(
         prev,
         message.studentId,
         board => applyClearToBoard(board, message)
@@ -101,7 +125,7 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
     });
 
     conn.on(HubEvents.ReceiveShape, (shapeDrawn: ShapeDrawn) => {
-      setBoards(prev => updateStudentBoard(
+      updateBoards(prev => updateStudentBoard(
         prev,
         shapeDrawn.studentId,
         board => applyShapeToBoard(board, shapeDrawn)
@@ -171,6 +195,8 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
 
     return () => {
       isDisposed = true;
+      if (boardFlush) clearTimeout(boardFlush);
+      pendingBoards = [];
       if (connectionRef.current) {
       connectionRef.current.stop();
       connectionRef.current = null;
