@@ -25,6 +25,8 @@ npm run dev
 
 Open `http://localhost:5173/teacher`, create a room and enter the staff creation code from `.dev.vars`. Students open the generated link/QR in another browser profile. Camera/microphone permission is not required for data channels. To run direct-only local tests, set `LOCAL_DIRECT_ONLY=true` in `.dev.vars`; this bypass works only when `WEB_ORIGIN` has hostname `localhost`. Remove it to test TURN. Production has no silent direct-only fallback when credentials are missing.
 
+Room creation is bounded at **100 rooms per UTC day per hosted deployment**, or **1,000** when both the signalling request URL and configured `WEB_ORIGIN` are loopback addresses. The counter persists across Wrangler restarts. A `429` with code `creation_quota` includes `Retry-After` and the next UTC reset time; existing rooms remain usable. Repeated development/load runs can exhaust the allowance. Use a dedicated `wrangler dev --persist-to <test-only-directory>` for load tests rather than sharing interactive development state. Do not delete local persistence merely to reset a counter if you need its rooms and credentials.
+
 Do not use an HTTP LAN IP to assess iPad recovery: IndexedDB and browser transport behavior must be checked on the real HTTPS deployment. Use the HTTPS migration preview for physical devices.
 
 ## Cloudflare signalling and TURN

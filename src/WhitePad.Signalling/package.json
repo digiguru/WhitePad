@@ -12,7 +12,8 @@
     "test:restart": "node tools/restart-test.mjs",
     "test:deploy": "node --test tools/deploy.test.mjs",
     "deploy:ci": "node tools/deploy.mjs",
-    "build": "wrangler deploy --dry-run --outdir dist"
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "test:quota": "node --experimental-strip-types --test tools/creationQuota.test.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261019.1",

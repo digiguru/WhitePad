@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { creationQuota, type CreationCounter } from "./creationQuota";
 import { identifier, type Controls } from "../../WhitePad.Web/src/p2p/protocol";
 interface Env {
   ROOMS: DurableObjectNamespace<Classroom>;
@@ -61,6 +62,7 @@ export default {
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Headers": "Authorization, Content-Type",
       "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Expose-Headers": "Retry-After",
       Vary: "Origin",
     };
     if (req.method === "OPTIONS") return new Response(null, { headers });
@@ -119,22 +121,22 @@ export class Classroom extends DurableObject<Env> {
     if (raw.length > 8192) return json({ error: "Too large" }, 413);
     const body = raw ? JSON.parse(raw) : {};
     if (action === "create") {
-      const day = Math.floor(Date.now() / 86400000);
-      const quota = await this.ctx.storage.get<{ day: number; count: number }>(
-        "quota",
+      const quota = creationQuota(
+        req.url, this.env.WEB_ORIGIN, Date.now(),
+        await this.ctx.storage.get<CreationCounter>("quota"),
       );
-      if (quota?.day === day && quota.count >= 100)
-        return json({ error: "Creation quota" }, 429);
+      if (!quota.allowed)
+        return Response.json(
+          { error: "Creation quota", code: "creation_quota", retryAt: quota.retryAt },
+          { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": String(quota.retryAfter) } },
+        );
       if (
         typeof body.name !== "string" ||
         !body.name.trim() ||
         body.name.length > 100
       )
         fail();
-      await this.ctx.storage.put("quota", {
-        day,
-        count: quota?.day === day ? quota.count + 1 : 1,
-      });
+      await this.ctx.storage.put("quota", quota.next);
       const id = crypto.randomUUID();
       return this.env.ROOMS.getByName(id).initialise(id, body.name);
     }

@@ -36,6 +36,7 @@ jobs:
           VITE_TRANSPORT=webrtc npm run build --prefix src/WhitePad.Web
           npm run check --prefix src/WhitePad.Signalling
           npm run test:deploy --prefix src/WhitePad.Signalling
+          npm run test:quota --prefix src/WhitePad.Signalling
           npm run build --prefix src/WhitePad.Signalling
       - name: Upload static frontend and Worker build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

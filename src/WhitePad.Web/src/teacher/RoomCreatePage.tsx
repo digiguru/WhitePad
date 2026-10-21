@@ -65,7 +65,9 @@ function RoomCreatePage({ onRoomCreated }: RoomCreatePageProps) {
       onRoomCreated(response.roomId, response.roomName, response.joinToken, joinUrl);
     } catch (err) {
       console.error('Failed to create room:', err);
-      setError('Failed to create room. Please try again.');
+      setError(connection?.isPeer && err instanceof Error && err.message.startsWith('The daily room-creation limit')
+        ? err.message
+        : 'Failed to create room. Please try again.');
       setIsCreating(false);
 
       if (connection) {

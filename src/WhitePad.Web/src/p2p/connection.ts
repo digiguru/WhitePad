@@ -1,3 +1,4 @@
+import { classroomRequestError } from "./requestError";
 import type { ClassroomConnection } from "../services/connection";
 import {
   apply,
@@ -181,8 +182,10 @@ export class PeerClassroomConnection implements ClassroomConnection {
     } finally {
       clearTimeout(timer);
     }
-    if (!response.ok)
-      throw new Error(`Classroom request failed (${response.status})`);
+    if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => undefined);
+      throw classroomRequestError(response.status, payload);
+    }
     return response.json();
   }
   async invoke<T = any>(method: string, ...args: any[]): Promise<T> {
