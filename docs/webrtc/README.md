@@ -9,7 +9,7 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 - [x] Versioned drawing protocol, local rendering, bounded backpressure, replay/snapshots, IndexedDB recovery and teacher-control reconciliation.
 - [x] Existing classroom tools and controls retained, with incremental teacher rendering and operation-journal persistence.
 - [x] Native iPad transitional routing to Safari for WebRTC rooms; legacy native rooms remain supported. This is not a native WebRTC implementation.
-- [x] 38 frontend tests, both frontend build modes, Worker TypeScript and 11 real-browser integration tests passed locally. One authenticated TURN test is skipped pending credentials.
+- [x] 42 frontend tests, both frontend build modes, Worker TypeScript and 11 real-browser integration tests passed locally. One authenticated TURN test is skipped pending credentials.
 - [x] Local Worker restart/persistent-authority test and standalone Swift join-link checks passed. The complete WebRTC workflow also passed in GitHub CI.
 - [x] Architecture, protocol, deployment, environment, rollback and cost-model documentation; real-peer/browser load harness and CI checks.
 - [x] Default frontend build writes to `dist`; explicit `build:server` preserves the .NET/Docker output. GitHub Actions builds artifacts and supports configured staging/production Cloudflare deployment; see [setup instructions](deployment.md#github-actions-setup-no-local-deployment-commands).

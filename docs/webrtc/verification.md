@@ -7,7 +7,7 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 | Check | Result |
 |---|---|
 | Frontend TypeScript + static Vite build | Passed |
-| Existing drawing/teacher-state regressions plus protocol/renderer/API tests | 38 passed |
+| Existing drawing/teacher-state regressions plus protocol/renderer/API tests | 42 passed |
 | Worker TypeScript | Passed |
 | Creation quota policy | 3 passed; local/hosted isolation and UTC reset/retry checks |
 | CI deployment helper | 2 passed; missing credentials/origins rejected, temporary secrets cleaned on success/failure |

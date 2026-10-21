@@ -92,6 +92,8 @@ VITE_SIGNALLING_URL=https://<your-signalling-worker-host>
 VITE_RTC_RELAY_ONLY=false
 ```
 
+`VITE_SIGNALLING_URL` is the URL printed by the **Deploy Worker** GitHub Actions step, typically `https://whitepad-signalling-staging.<account>.workers.dev`. It is **not** `https://turn.cloudflare.com` (the managed relay) or `https://rtc.live.cloudflare.com` (the TURN credential API). Those hosts are handled internally by the signalling service. The frontend rejects these misconfigurations with an actionable error. A successful static build alone does not verify a working signalling endpoint.
+
 Do not put `CREATE_ROOM_SECRET`, `TURN_API_TOKEN`, a teacher token or any other secret in a `VITE_*` variable. Vite embeds those variables in public JavaScript. Changing build settings requires rebuilding the frontend. Select `VITE_RTC_RELAY_ONLY=true` on a dedicated test preview to force relay; normal production should use `false` to prefer direct connections.
 
 The build remains static React/Vite; no Next.js or Vercel API route is needed. `npm run build` always writes to `dist`, regardless of transport selection. For the existing Kestrel/container deployment, use `npm run build:server` to explicitly write to `WhitePad.Server/wwwroot`; keep `VITE_TRANSPORT` unset for SignalR. The Dockerfile and legacy image workflow use that command.

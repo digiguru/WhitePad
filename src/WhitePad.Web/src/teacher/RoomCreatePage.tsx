@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SignallingConfigurationError } from '../p2p/signallingUrl';
 import type { ClassroomConnection as HubConnection } from '../services/connection';
 import { createSignalRConnection } from '../services/signalr';
 import { CreateRoomResponse } from '../shared/types/messages';
@@ -65,7 +66,7 @@ function RoomCreatePage({ onRoomCreated }: RoomCreatePageProps) {
       onRoomCreated(response.roomId, response.roomName, response.joinToken, joinUrl);
     } catch (err) {
       console.error('Failed to create room:', err);
-      setError(connection?.isPeer && err instanceof Error && err.message.startsWith('The daily room-creation limit')
+      setError(connection?.isPeer && err instanceof Error && (err instanceof SignallingConfigurationError || err.message.startsWith('The daily room-creation limit'))
         ? err.message
         : 'Failed to create room. Please try again.');
       setIsCreating(false);

@@ -1,3 +1,4 @@
+import { signallingUrl } from "./signallingUrl";
 import { classroomRequestError } from "./requestError";
 import type { ClassroomConnection } from "../services/connection";
 import {
@@ -142,7 +143,7 @@ export class PeerClassroomConnection implements ClassroomConnection {
     }
   };
   async start() {
-    if (!this.url) throw new Error("VITE_SIGNALLING_URL is required");
+    this.url = signallingUrl(this.url);
     this.stopped = false;
     active.add(this);
     window.addEventListener("online", this.wake);
