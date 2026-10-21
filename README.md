@@ -80,7 +80,7 @@ npm run dev
 
 ```bash
 cd src/WhitePad.Web
-npm run build
+npm run build:server
 
 cd ../WhitePad.Server
 dotnet run
@@ -169,7 +169,9 @@ A static Vite frontend, Cloudflare Durable Object signalling/control plane, and 
 - [Migration status and remaining tasks](docs/webrtc/README.md)
 - [Architecture and security](docs/webrtc/architecture.md)
 - [Versioned drawing and recovery protocol](docs/webrtc/protocol.md)
-- [Local setup, environment variables, deployment and rollback](docs/webrtc/deployment.md)
+- [Local setup, environment variables, GitHub Actions deployment and rollback](docs/webrtc/deployment.md)
 - [Native iPad transition](docs/webrtc/ipad-transition.md)
 - [Tests, load results and device acceptance](docs/webrtc/verification.md)
 - [Cost assumptions and sensitivity model](docs/webrtc/costs.md)
+
+Frontend builds: `npm run build` writes static assets to `dist`; `npm run build:server` writes to the ASP.NET `wwwroot` folder. Cloudflare deployments can run through GitHub Actions after configuring the environment secrets and variables in the linked deployment guide.

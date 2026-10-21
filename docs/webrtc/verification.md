@@ -9,6 +9,8 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 | Frontend TypeScript + static Vite build | Passed |
 | Existing drawing/teacher-state regressions plus protocol/renderer tests | 34 passed |
 | Worker TypeScript | Passed |
+| CI deployment helper | 2 passed; missing credentials/origins rejected, temporary secrets cleaned on success/failure |
+| Worker dry-run bundle | Passed without uploading |
 | Worker restart and persistent authority | Passed locally |
 | Legacy .NET tests | Passed in GitHub CI; SDK unavailable locally |
 | Real-browser integration | 11 passed; authenticated TURN test skipped without credentials |
@@ -45,6 +47,8 @@ npm test
 VITE_TRANSPORT=webrtc npm run build
 cd ../WhitePad.Signalling
 npm run check
+npm run test:deploy
+npm run build
 npm run test:restart
 npx playwright install chromium
 npm run test:browser

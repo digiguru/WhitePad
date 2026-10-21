@@ -6,7 +6,7 @@ RUN npm ci
 COPY src/WhitePad.Web/ ./
 # Pre-create the parent so vite can write to ../WhitePad.Server/wwwroot
 RUN mkdir -p /src/WhitePad.Server
-RUN npm run build
+RUN npm run build:server
 
 # Stage 2: Build .NET backend
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build

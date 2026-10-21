@@ -57,7 +57,7 @@ npm run dev
 **Production Build** (serves frontend from backend):
 ```bash
 cd src/WhitePad.Web
-npm run build
+npm run build:server
 # Outputs to ../WhitePad.Server/wwwroot/
 
 cd ../WhitePad.Server

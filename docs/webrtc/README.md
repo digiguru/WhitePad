@@ -12,6 +12,7 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 - [x] 34 frontend tests, both frontend build modes, Worker TypeScript and 11 real-browser integration tests passed locally. One authenticated TURN test is skipped pending credentials.
 - [x] Local Worker restart/persistent-authority test and standalone Swift join-link checks passed. The complete WebRTC workflow also passed in GitHub CI.
 - [x] Architecture, protocol, deployment, environment, rollback and cost-model documentation; real-peer/browser load harness and CI checks.
+- [x] Default frontend build writes to `dist`; explicit `build:server` preserves the .NET/Docker output. GitHub Actions builds artifacts and supports configured staging/production Cloudflare deployment; see [setup instructions](deployment.md#github-actions-setup-no-local-deployment-commands).
 
 ## Remaining implementation and review tasks
 
