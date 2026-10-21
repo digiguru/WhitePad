@@ -17,7 +17,7 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 
 - [x] Final isolated 400-participant intermittent run: 385/385 student peers, no drawing errors, 5 ms median / 38 ms p95 post-batch delivery over 60 seconds at 25% duty.
 - [x] Consolidated compact load summaries; raw reports remain local and ignored. Interrupted development runs are excluded from capacity evidence.
-- [ ] Review the final diff, commit the feature branch and open a draft PR with validation, limitations and rollback instructions.
+- [x] Reviewed and committed the feature branch; [draft PR #1](https://github.com/digiguru/WhitePad/pull/1) includes validation, limitations and rollback instructions.
 - [ ] Diagnose the sustained 400-participant failure and repeat on distributed load generators. The latest isolated sustained run retained only **109/385 student peers** after 60 seconds. This is an unresolved capacity gate; single-host resource saturation and application bottlenecks have not been separated.
 
 ## Release gates requiring credentials or external environments
