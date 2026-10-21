@@ -63,6 +63,7 @@ function StudentApp() {
   const [initialIsLocked, setInitialIsLocked] = useState(false);
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
   const [showKickedModal, setShowKickedModal] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const [hasAttemptedResume, setHasAttemptedResume] = useState(false);
 
   const roomId = searchParams.get('roomId');
@@ -142,7 +143,9 @@ function StudentApp() {
         });
       } catch (err) {
         console.warn('Failed to resume student session:', err);
-        clearStoredSession(roomId);
+        if (connection.isPeer && !String(err).includes('(403)') && !String(err).includes('(404)')) {
+          setResumeError('Your saved session is safe. The classroom service is unavailable.');
+        } else { clearStoredSession(roomId); }
       } finally {
         if (!isCancelled) {
           setHasAttemptedResume(true);
@@ -176,6 +179,8 @@ function StudentApp() {
   if (!connection) {
     return <div className="join-container"><p>Connecting...</p></div>;
   }
+
+  if (resumeError) return <div className="join-container"><p role="alert">{resumeError}</p><button onClick={() => { setResumeError(null); setHasAttemptedResume(false); }}>Retry connection</button></div>;
 
   if (!hasAttemptedResume && !studentId) {
     return <div className="join-container"><p>Reconnecting...</p></div>;

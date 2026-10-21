@@ -49,4 +49,15 @@ describe('StrokeBatcher', () => {
     vi.advanceTimersByTime(50);
     expect(onBatch).toHaveBeenCalledTimes(1);
   });
+  it('supports 100ms batches, flushes empty pen-up and cancels pending gestures', () => {
+    const onBatch = vi.fn();
+    const batcher = new StrokeBatcher('peer-stroke', onBatch, 100);
+    batcher.addPoint({ x: 0.1, y: 0.2, pressure: 1 });
+    vi.advanceTimersByTime(99); expect(onBatch).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1); expect(onBatch).toHaveBeenCalledTimes(1);
+    batcher.flush(true); expect(onBatch.mock.calls[1][0].isComplete).toBe(true);
+    batcher.addPoint({ x: 0.2, y: 0.3, pressure: 1 }); batcher.cancel();
+    vi.advanceTimersByTime(200); expect(onBatch).toHaveBeenCalledTimes(2);
+  });
+
 });

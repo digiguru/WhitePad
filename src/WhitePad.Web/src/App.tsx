@@ -7,6 +7,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/teacher" element={<TeacherApp />} />
+        <Route path="/web-join" element={<StudentApp />} />
         <Route path="/join" element={<StudentApp />} />
         <Route path="/" element={<Navigate to="/teacher" replace />} />
       </Routes>

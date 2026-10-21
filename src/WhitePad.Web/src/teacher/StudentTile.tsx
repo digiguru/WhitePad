@@ -1,9 +1,9 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { HubConnection } from '@microsoft/signalr';
+import { useRef, useEffect, useState, useCallback, memo } from 'react';
+import type { ClassroomConnection as HubConnection } from '../services/connection';
 import { Student, PaperColor } from '../shared/types/messages';
-import { renderShape } from '../shared/utils/shapeRenderer';
+import { renderBoardCanvas, invalidateBoardCanvas } from './boardRenderer';
 import { HubMethods } from '../shared/constants/hubContract';
-import { EMPTY_TEACHER_BOARD, isEraserBatch, TeacherBoardState } from './teacherBoardState';
+import { EMPTY_TEACHER_BOARD, TeacherBoardState } from './teacherBoardState';
 
 interface StudentTileProps {
   student: Student;
@@ -42,6 +42,8 @@ function StudentTile({
   onExitFocus,
 }: StudentTileProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const latestBoard = useRef(boardState);
+  latestBoard.current = boardState;
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition | null>(null);
 
@@ -100,50 +102,8 @@ function StudentTile({
 
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const lineWidthScale = isFocused ? 1 : 0.4;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBackground(ctx, canvas.width, canvas.height);
-
-    // Redraw strokes and shapes in the order the student created them.
-    boardState.drawOrder.forEach((id) => {
-      const batch = boardState.strokes[id];
-      if (batch) {
-        if (batch.points.length === 0) return;
-
-        const isEraser = isEraserBatch(batch);
-
-        ctx.beginPath();
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = isEraser ? PAPER_COLORS[batch.paperColor ?? boardState.paperColor] : batch.color || '#000000';
-        ctx.lineWidth = Math.abs(batch.lineWidth || 2) * lineWidthScale;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        const firstPoint = batch.points[0];
-        ctx.moveTo(firstPoint.x * canvas.width, firstPoint.y * canvas.height);
-
-        for (let i = 1; i < batch.points.length; i++) {
-          const point = batch.points[i];
-          ctx.lineTo(point.x * canvas.width, point.y * canvas.height);
-        }
-
-        ctx.stroke();
-        ctx.globalCompositeOperation = 'source-over';
-        return;
-      }
-
-      const shape = boardState.shapes[id];
-      if (shape) {
-        renderShape(ctx, shape, canvas.width, canvas.height, { lineWidthScale });
-      }
-    });
-  }, [boardState, drawBackground, isFocused]);
+    if (canvas) renderBoardCanvas(canvas, latestBoard.current, isFocused ? 1 : 0.4, drawBackground);
+  }, [drawBackground, isFocused]);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -263,41 +223,15 @@ function StudentTile({
 
   useEffect(() => {
     redrawCanvas();
-  }, [redrawCanvas]);
+  }, [boardState, redrawCanvas]);
 
-  // Periodic redraw to handle window dragging and other events that might clear the canvas
   useEffect(() => {
-    const interval = setInterval(() => {
-      const canvas = canvasRef.current;
-      if (!canvas || boardState.drawOrder.length === 0) return;
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Check if canvas is empty by sampling strategic pixels across the canvas
-      // Sample 25 points in a grid pattern
-      let hasContent = false;
-      for (let y = 0; y < 5; y++) {
-        for (let x = 0; x < 5; x++) {
-          const px = Math.floor((x + 0.5) * canvas.width / 5);
-          const py = Math.floor((y + 0.5) * canvas.height / 5);
-          const imageData = ctx.getImageData(px, py, 1, 1);
-          if (imageData.data[3] > 0) { // Check alpha channel
-            hasContent = true;
-            break;
-          }
-        }
-        if (hasContent) break;
-      }
-
-      // If canvas is empty but we have strokes, redraw
-      if (!hasContent && boardState.drawOrder.length > 0) {
-        redrawCanvas();
-      }
-    }, 50); // Check every 50ms for faster detection
-
-    return () => clearInterval(interval);
-  }, [boardState.drawOrder.length, redrawCanvas]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const restored = () => { invalidateBoardCanvas(canvas); redrawCanvas(); };
+    canvas.addEventListener('contextrestored', restored);
+    return () => canvas.removeEventListener('contextrestored', restored);
+  }, [redrawCanvas]);
 
   return (
     <>
@@ -343,7 +277,7 @@ function StudentTile({
           </div>
         )}
         <div className="student-tile-header">
-          {student.isLocked && '🔒 '}{student.displayName}
+          {student.isLocked && '🔒 '}{student.displayName}{student.isConnected === false && <small> (disconnected)</small>}
         </div>
         <div className="student-canvas-wrapper" ref={canvasWrapperRef}>
           <canvas
@@ -400,4 +334,4 @@ function StudentTile({
   );
 }
 
-export default StudentTile;
+export default memo(StudentTile);

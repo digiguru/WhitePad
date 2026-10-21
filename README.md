@@ -161,3 +161,15 @@ Full testing guide: `docs/TESTING-README.md`
 4. Move to Stage 5 (advanced classroom controls) once Stage 4 matrix is green.
 
 Last updated: 2026-05-20
+
+## WebRTC migration (feature branch)
+
+A static Vite frontend, Cloudflare Durable Object signalling/control plane, and authenticated TURN integration are available behind `VITE_TRANSPORT=webrtc`. The existing SignalR build remains the default during migration.
+
+- [Migration status and remaining tasks](docs/webrtc/README.md)
+- [Architecture and security](docs/webrtc/architecture.md)
+- [Versioned drawing and recovery protocol](docs/webrtc/protocol.md)
+- [Local setup, environment variables, deployment and rollback](docs/webrtc/deployment.md)
+- [Native iPad transition](docs/webrtc/ipad-transition.md)
+- [Tests, load results and device acceptance](docs/webrtc/verification.md)
+- [Cost assumptions and sensitivity model](docs/webrtc/costs.md)

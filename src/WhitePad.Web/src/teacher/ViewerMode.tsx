@@ -1,4 +1,4 @@
-import { HubConnection } from '@microsoft/signalr';
+import type { ClassroomConnection as HubConnection } from '../services/connection';
 import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QuestionChanged, Student } from '../shared/types/messages';

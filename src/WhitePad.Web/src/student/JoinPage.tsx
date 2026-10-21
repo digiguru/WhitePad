@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { HubConnection } from '@microsoft/signalr';
+import type { ClassroomConnection as HubConnection } from '../services/connection';
 import { JoinRoomResponse } from '../shared/types/messages';
 import { HubMethods } from '../shared/constants/hubContract';
 

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ParsedJoinLinkView: View {
+    @Environment(\.openURL) private var openURL
     @EnvironmentObject private var appRouter: AppRouter
     let joinLink: JoinLink
 
@@ -13,9 +14,14 @@ struct ParsedJoinLinkView: View {
             Section("Parsed Join Link") {
                 LabeledContent("Server", value: joinLink.serverBaseURL.absoluteString)
                 LabeledContent("Room ID", value: joinLink.roomId)
-                LabeledContent("Token", value: joinLink.joinToken)
             }
 
+            if let webURL = joinLink.webRTCURL {
+                Section("WebRTC Classroom") {
+                    Text("This classroom uses peer-to-peer drawing. Continue in Safari to use all drawing tools with Apple Pencil. Legacy classrooms still open in this app.")
+                    Button("Continue in Safari") { openURL(webURL) }
+                }
+            } else {
             Section("Join Room") {
                 TextField("Your name", text: $displayName)
                     .textInputAutocapitalization(.words)
@@ -35,6 +41,7 @@ struct ParsedJoinLinkView: View {
                 .disabled(isJoining || displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
+            }
             Section {
                 Button("Parse Another Link") {
                     appRouter.reset()

@@ -1,0 +1,52 @@
+name: WebRTC migration checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  web-and-peers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked dependencies
+        run: |
+          npm ci --prefix src/WhitePad.Web
+          npm ci --prefix src/WhitePad.Signalling
+      - name: Protocol, drawing regressions and both builds
+        run: |
+          npm test --prefix src/WhitePad.Web
+          npm run build --prefix src/WhitePad.Web
+          VITE_TRANSPORT=webrtc npm run build --prefix src/WhitePad.Web
+          npm run check --prefix src/WhitePad.Signalling
+      - name: Persisted authority after emulator restart
+        working-directory: src/WhitePad.Signalling
+        run: npm run test:restart
+      - name: Install browser
+        working-directory: src/WhitePad.Signalling
+        run: npx playwright install --with-deps chromium
+      - name: Real local peer and rendering tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd src/WhitePad.Signalling && npx wrangler dev --port 8787 --var CREATE_ROOM_SECRET:local-test-only --var LOCAL_DIRECT_ONLY:true) >/tmp/whitepad-signalling.log 2>&1 &
+          signal_pid=$!
+          (cd src/WhitePad.Web && VITE_TRANSPORT=webrtc VITE_SIGNALLING_URL=http://localhost:8787 npm run dev -- --host 127.0.0.1) >/tmp/whitepad-web.log 2>&1 &
+          web_pid=$!
+          trap 'kill "$signal_pid" "$web_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl -s http://localhost:8787 >/dev/null && curl -fs http://localhost:5173 >/dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:browser --prefix src/WhitePad.Signalling
+  native-join-compatibility:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift Foundation compatibility
+        run: |
+          swiftc src/WhitePad.iPad/WhitePad.iPad/Features/Join/JoinLink.swift src/WhitePad.iPad/WhitePad.iPad/App/DeepLinkRouter.swift src/WhitePad.iPad/WhitePad.iPad/Shared/WhitePadError.swift src/WhitePad.iPad/tools/verify-join.swift -o /tmp/whitepad-verify-join
+          /tmp/whitepad-verify-join

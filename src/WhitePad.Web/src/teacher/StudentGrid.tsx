@@ -1,4 +1,4 @@
-import { HubConnection } from '@microsoft/signalr';
+import type { ClassroomConnection as HubConnection } from '../services/connection';
 import { Student } from '../shared/types/messages';
 import StudentTile from './StudentTile';
 import { TeacherBoardStates } from './teacherBoardState';

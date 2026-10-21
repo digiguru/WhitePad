@@ -1,0 +1,78 @@
+{
+  "assumptions": {
+    "students": 385,
+    "teachers": 15,
+    "hoursAtDeploymentScale": 120,
+    "aggregateClassroomHours": 1800,
+    "bytesPerActiveMinute": 500000,
+    "relayMultiplier": 2.6,
+    "freeTurnGB": 1000,
+    "turnPricePerGB": 0.05,
+    "otherRealtimeUsageGB": 0
+  },
+  "rows": [
+    {
+      "dutyPercent": 10,
+      "relayPercent": 0,
+      "applicationGB": 138.6,
+      "turnGB": 0,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 10,
+      "relayPercent": 25,
+      "applicationGB": 138.6,
+      "turnGB": 90.09,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 10,
+      "relayPercent": 100,
+      "applicationGB": 138.6,
+      "turnGB": 360.36,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 25,
+      "relayPercent": 0,
+      "applicationGB": 346.5,
+      "turnGB": 0,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 25,
+      "relayPercent": 25,
+      "applicationGB": 346.5,
+      "turnGB": 225.22,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 25,
+      "relayPercent": 100,
+      "applicationGB": 346.5,
+      "turnGB": 900.9,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 100,
+      "relayPercent": 0,
+      "applicationGB": 1386,
+      "turnGB": 0,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 100,
+      "relayPercent": 25,
+      "applicationGB": 1386,
+      "turnGB": 900.9,
+      "turnUSD": 0
+    },
+    {
+      "dutyPercent": 100,
+      "relayPercent": 100,
+      "applicationGB": 1386,
+      "turnGB": 3603.6,
+      "turnUSD": 130.18
+    }
+  ]
+}

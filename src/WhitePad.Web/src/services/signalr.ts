@@ -1,6 +1,10 @@
 import * as signalR from '@microsoft/signalr';
 
-export function createSignalRConnection(hubUrl: string): signalR.HubConnection {
+import type { ClassroomConnection } from './connection';
+import { PeerClassroomConnection } from '../p2p/connection';
+
+export function createSignalRConnection(hubUrl: string): ClassroomConnection {
+  if (import.meta.env.VITE_TRANSPORT === 'webrtc') return new PeerClassroomConnection();
   return new signalR.HubConnectionBuilder()
     .withUrl(hubUrl)
     .withAutomaticReconnect()

@@ -1,0 +1,19 @@
+name = "whitepad-signalling"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:5173"
+WEB_ORIGIN = "http://localhost:5173"
+# LOCAL_DIRECT_ONLY = "true" # Local testing ONLY; production fails closed without TURN.
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Classroom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Classroom"]
+
+[observability]
+enabled = false

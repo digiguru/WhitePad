@@ -83,3 +83,12 @@ src/WhitePad.Server/wwwroot/
 # Local helper scripts
 /start-dev-tmux.sh
 /start-network-tmux.sh
+
+# Cloudflare local state and secrets
+.wrangler/
+.dev.vars
+.build/
+.swiftpm/
+
+# Local detailed browser load reports
+docs/webrtc/raw/

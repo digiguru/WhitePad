@@ -1,0 +1,6 @@
+# Copy to .dev.vars (ignored). Use your own values. Do not commit real secrets.
+CREATE_ROOM_SECRET=replace-with-a-long-random-teacher-access-code
+TURN_KEY_ID=your-cloudflare-turn-key-id
+TURN_API_TOKEN=your-cloudflare-turn-api-token
+# Local testing without TURN only:
+# LOCAL_DIRECT_ONLY=true

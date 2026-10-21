@@ -1,0 +1,78 @@
+{
+  "rooms": 1,
+  "participants": 29,
+  "seconds": 60,
+  "duty": 1,
+  "relayOnly": false,
+  "started": "2026-10-21T10:29:23.843Z",
+  "establishedAt": "2026-10-21T10:29:26.194Z",
+  "summary": {
+    "connected": 28,
+    "expected": 28,
+    "relayed": 0,
+    "applicationBytes": 6801784,
+    "bytesPerActiveDrawingMinute": 242920.85714285713,
+    "oneWayLatencyMs": {
+      "p50": 3,
+      "p95": 14,
+      "samples": 10000
+    },
+    "signallingBytes": 215316,
+    "drawingErrors": 0
+  },
+  "harness": "Chromium real RTCDataChannels; 1 actual React teacher grids; students generated in one page per room; one local host",
+  "pageErrors": 0,
+  "connectionEstablishmentMs": {
+    "samples": 28,
+    "min": 10.600000008940697,
+    "p50": 17.600000008940697,
+    "p95": 128.8999999910593,
+    "max": 145.29999999701977
+  },
+  "postBatchDeliveryLatencyMs": {
+    "samples": 10000,
+    "min": 0,
+    "p50": 3,
+    "p95": 14,
+    "max": 24
+  },
+  "teacherTaskCpuSecondsIncludingSetup": {
+    "samples": 1,
+    "min": 3.494218,
+    "p50": 3.494218,
+    "p95": 3.494218,
+    "max": 3.494218
+  },
+  "teacherJsHeapBytesAtEnd": {
+    "samples": 1,
+    "min": 40992656,
+    "p50": 40992656,
+    "p95": 40992656,
+    "max": 40992656
+  },
+  "teacherRendering": {
+    "frames": 3783,
+    "framesAbove50ms": 0,
+    "longTasks": 0,
+    "canvasCounts": [
+      28
+    ],
+    "expectedBoards": [
+      28
+    ]
+  },
+  "peerPeakBufferedBytes": {
+    "samples": 28,
+    "min": 949,
+    "p50": 1041,
+    "p95": 1041,
+    "max": 1041
+  },
+  "turnBillableBytes": null,
+  "notes": [
+    "Local delivery timestamps exclude the initial 100ms point batching and final browser presentation.",
+    "One host runs all peers; CPU/heap are browser metrics, not full native process memory.",
+    "TURN billing requires credentials and provider egress counters; zero relays does not test TURN.",
+    "A 60-second run does not establish full-lesson stability."
+  ]
+}

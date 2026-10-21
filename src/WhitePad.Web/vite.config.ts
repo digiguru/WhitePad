@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: '../WhitePad.Server/wwwroot',
+    outDir: process.env.VITE_TRANSPORT === 'webrtc' ? 'dist' : '../WhitePad.Server/wwwroot',
     emptyOutDir: true,
   },
   server: {
