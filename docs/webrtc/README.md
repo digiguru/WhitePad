@@ -1,6 +1,6 @@
 # WebRTC migration status and remaining work
 
-Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-in; the existing SignalR deployment remains available. No hosted deployment or service purchase has been performed.
+Updated 2026-10-21. PRs #1 and #2 are merged. The Vercel web deployment uses WebRTC with the TypeScript Cloudflare Worker; the repository still defaults to SignalR when `VITE_TRANSPORT` is unset, preserving the legacy deployment. No service purchase was performed.
 
 ## Completed
 
@@ -18,14 +18,17 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 
 - [x] Final isolated 400-participant intermittent run: 385/385 student peers, no drawing errors, 5 ms median / 38 ms p95 post-batch delivery over 60 seconds at 25% duty.
 - [x] Consolidated compact load summaries; raw reports remain local and ignored. Interrupted development runs are excluded from capacity evidence.
-- [x] Reviewed and committed the feature branch; [draft PR #1](https://github.com/digiguru/WhitePad/pull/1) includes validation, limitations and rollback instructions.
+- [x] Reviewed and committed the feature branch; [merged PR #1](https://github.com/digiguru/WhitePad/pull/1) includes validation, limitations and rollback instructions.
 - [ ] Diagnose the sustained 400-participant failure and repeat on distributed load generators. The latest isolated sustained run retained only **109/385 student peers** after 60 seconds. This is an unresolved capacity gate; single-host resource saturation and application bottlenecks have not been separated.
 
 ## Release gates requiring credentials or external environments
 
 - [x] Real Cloudflare credential issuance and one teacher/student pair using forced authenticated TURN passed locally on 2026-10-21.
 - [ ] Validate hosted TURN, blocked-UDP school-network fallback, relay load and provider traffic counters. Keep secrets out of Git and chat.
-- [ ] Deploy an isolated Worker and Vercel preview after account/environment selection; verify hosted restart, redeploy, hibernation and reconnect behavior. Production promotion remains a separate decision.
+- [x] Deploy the staging Worker and Vercel web frontend. Main commit `8a4ab07` passed [all CI and hosted authority/TURN credential checks](https://github.com/digiguru/WhitePad/actions/runs/39670323257). The web frontend is https://white-pad-woad.vercel.app and the Worker is https://whitepad-signalling-staging.digiguru.workers.dev.
+- [x] Correct Vercel public build variables to `VITE_TRANSPORT=webrtc`, `VITE_SIGNALLING_URL=https://whitepad-signalling-staging.digiguru.workers.dev`, `VITE_RTC_RELAY_ONLY=false`; rebuild and verify the served JavaScript contains the Worker URL.
+- [x] Hosted built-frontend Chromium acceptance passed: room creation through the teacher UI, student join, real drawing on the teacher canvas, student refresh/local recovery and teacher refresh/board recovery. Repeat with `tools/hosted-browser.mjs`; this is one pair, not a capacity result.
+- [ ] Verify hosted restart, redeploy, hibernation and reconnect behavior. The web domain currently targets the staging Worker; a separate production Worker remains optional configuration before wider rollout.
 - [ ] Run a full lesson-duration test at approximately 15 classrooms/400 participants on representative teacher hardware and school networks, including 10%, 25% and sustained drawing, direct and relay paths.
 - [ ] Test physical Safari/iPad/Apple Pencil, sleep/background/network transitions, all tools, controls during gestures and IndexedDB eviction. Full Xcode/XCTest and native app build require an Xcode environment; only standalone Foundation compatibility checks ran here.
 - [x] Legacy backend and frontend CI passed on the published feature branch; the .NET SDK remains unavailable locally.
