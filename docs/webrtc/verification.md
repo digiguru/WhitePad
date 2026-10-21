@@ -7,25 +7,31 @@ Tested locally on macOS/arm64 using the installed Node toolchain, Cloudflare wor
 | Check | Result |
 |---|---|
 | Frontend TypeScript + static Vite build | Passed |
-| Existing drawing/teacher-state regressions plus protocol/renderer/API tests | 42 passed |
+| Existing drawing/teacher-state regressions plus protocol/renderer/API tests | 46 passed |
 | Worker TypeScript | Passed |
 | Creation quota policy | 3 passed; local/hosted isolation and UTC reset/retry checks |
 | CI deployment helper | 2 passed; missing credentials/origins rejected, temporary secrets cleaned on success/failure |
 | Worker dry-run bundle | Passed without uploading |
 | Worker restart and persistent authority | Passed locally |
 | Legacy .NET tests | Passed in GitHub CI; SDK unavailable locally |
-| Real-browser integration | 11 passed; authenticated TURN test skipped without credentials |
+| Real-browser integration | 11 direct/local tests passed; separate credential-enabled forced-TURN test passed |
 | Swift Foundation join-link executable | Passed for web, legacy, custom scheme and encoded tokens |
 | Full SwiftUI/PencilKit app / XCTest | Not run successfully: this machine has Command Line Tools, no full Xcode/XCTest SDK |
 | Physical Safari/iPad/Pencil and school network | Not available locally |
 | Hosted Worker and Vercel deployment | Not deployed; requires selected accounts/environment approval |
-| Authenticated direct/TURN production integration | TURN credentials pending; direct local data channels tested |
+| Authenticated TURN | Real Cloudflare credentials and forced relay with drawing passed locally; hosted Worker/school fallback and relay load pending |
 
 Integration tests verify role/room isolation, no teacher/session access with a join token, origin rejection, authenticated sender binding, drawing, undo/redo, teacher refresh, student refresh/IndexedDB recovery, chunked snapshots, offline lock/clear/question reconciliation, live locks, kicking and delayed/duplicated delivery after a clear. The UI test draws into the real student canvas and checks real teacher canvas pixels, then verifies local ink survives refresh.
 
 Protocol tests cover idempotency, gaps, epochs, malformed operations/snapshots, unknown objects, undo/redo materialisation, quantisation, operation capacity, rollback of unacknowledged offline changes, send-queue bounds and rate/backoff bounds. Incremental renderer tests ensure undo/replacement and changes below later objects trigger a full redraw. A slow RTC sender test keeps `bufferedAmount` above the high-water mark and confirms bounded queue/recovery behavior; this is not a physical congested-Wi-Fi test.
 
-Legacy backend/frontend checks also passed in [GitHub CI](https://github.com/digiguru/WhitePad/actions/runs/39589410350) for commit `3e7f6f4`. The full [WebRTC migration workflow](https://github.com/digiguru/WhitePad/actions/runs/39589410188), including real Chromium peers and macOS Foundation compatibility, also passed for that commit. Authenticated TURN remains skipped without credentials.
+Legacy backend/frontend checks also passed in [GitHub CI](https://github.com/digiguru/WhitePad/actions/runs/39589410350) for commit `3e7f6f4`. The full [WebRTC migration workflow](https://github.com/digiguru/WhitePad/actions/runs/39589410188), including real Chromium peers and macOS Foundation compatibility, also passed for that commit. CI skips authenticated TURN without credentials; a separate local credential-enabled run passed.
+
+## Authenticated relay result (2026-10-21)
+
+`TEST_TURN=true ... --grep "forced relay establishes real peers"` passed with the locally configured staff code and real Cloudflare TURN credentials (one test, 26.9 seconds; 27.7 seconds including runner overhead). Both peers used relay-only policy, the selected student path was relayed, and the teacher received vector drawing operations. No credential values, raw SDP or candidate addresses were recorded.
+
+The first run failed because ICE gathering did not complete before the 12-second deadline, despite five relay candidates being available. Other server transports remained in gathering. The fix sends already gathered candidates at the deadline; forced-relay mode still requires a relay candidate, and no-candidate attempts fail/retry. Four unit tests cover the deadline and completion behavior. This is a single-pair connectivity result, not a TURN capacity, latency or billing measurement. UDP-blocked school networks and provider egress counters remain untested.
 
 ## Commands
 

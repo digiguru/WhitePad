@@ -77,7 +77,14 @@ export async function gather(pc: RTCPeerConnection) {
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
       cleanup();
-      reject(new Error("ICE gathering timed out"));
+      // A blocked transport can keep gathering open after another TURN path succeeds.
+      // Non-trickle signalling can still send the candidates already in localDescription.
+      const candidates = pc.localDescription?.sdp.match(/^a=candidate:[^\r\n]*\btyp (?:host|srflx|prflx|relay)\b/gm) ?? [];
+      const usable = pc.getConfiguration().iceTransportPolicy === "relay"
+        ? candidates.some((candidate) => /\btyp relay\b/.test(candidate))
+        : candidates.length > 0;
+      if (usable) resolve();
+      else reject(new Error("ICE gathering timed out without usable candidates"));
     }, 12000);
     const check = () => {
       if (pc.iceGatheringState === "complete") {

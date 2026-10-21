@@ -9,7 +9,7 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 - [x] Versioned drawing protocol, local rendering, bounded backpressure, replay/snapshots, IndexedDB recovery and teacher-control reconciliation.
 - [x] Existing classroom tools and controls retained, with incremental teacher rendering and operation-journal persistence.
 - [x] Native iPad transitional routing to Safari for WebRTC rooms; legacy native rooms remain supported. This is not a native WebRTC implementation.
-- [x] 42 frontend tests, both frontend build modes, Worker TypeScript and 11 real-browser integration tests passed locally. One authenticated TURN test is skipped pending credentials.
+- [x] 46 frontend tests, both frontend build modes, Worker TypeScript and 11 real-browser integration tests passed locally. A separate authenticated forced-TURN browser test also passed using real Cloudflare relay credentials. CI skips that credential-dependent test.
 - [x] Local Worker restart/persistent-authority test and standalone Swift join-link checks passed. The complete WebRTC workflow also passed in GitHub CI.
 - [x] Architecture, protocol, deployment, environment, rollback and cost-model documentation; real-peer/browser load harness and CI checks.
 - [x] Default frontend build writes to `dist`; explicit `build:server` preserves the .NET/Docker output. GitHub Actions builds artifacts and supports configured staging/production Cloudflare deployment; see [setup instructions](deployment.md#github-actions-setup-no-local-deployment-commands).
@@ -23,7 +23,8 @@ Updated 2026-10-21. Work is on `codex/webrtc-classrooms`. The migration is opt-i
 
 ## Release gates requiring credentials or external environments
 
-- [ ] Configure `TURN_KEY_ID` and `TURN_API_TOKEN` in ignored `src/WhitePad.Signalling/.dev.vars`, then validate forced authenticated TURN, blocked-UDP fallback and provider traffic counters. Cloudflare dashboard: Realtime → TURN → create a key. Keep secrets out of Git and chat.
+- [x] Real Cloudflare credential issuance and one teacher/student pair using forced authenticated TURN passed locally on 2026-10-21.
+- [ ] Validate hosted TURN, blocked-UDP school-network fallback, relay load and provider traffic counters. Keep secrets out of Git and chat.
 - [ ] Deploy an isolated Worker and Vercel preview after account/environment selection; verify hosted restart, redeploy, hibernation and reconnect behavior. Production promotion remains a separate decision.
 - [ ] Run a full lesson-duration test at approximately 15 classrooms/400 participants on representative teacher hardware and school networks, including 10%, 25% and sustained drawing, direct and relay paths.
 - [ ] Test physical Safari/iPad/Apple Pencil, sleep/background/network transitions, all tools, controls during gestures and IndexedDB eviction. Full Xcode/XCTest and native app build require an Xcode environment; only standalone Foundation compatibility checks ran here.
