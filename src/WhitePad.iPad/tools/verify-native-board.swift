@@ -29,6 +29,13 @@ import Foundation
         try board.commit(["type":"answered","value":true])
         let view = NativeBoardViewState(board:board,studentId:"student")
         precondition(view.background == .squares && view.paper == .buff && view.confidence == .amber && view.answered)
+        let bounded = try NativeBoard(source:source)
+        for _ in 0..<20000 { try bounded.commit(["type":"confidence","value":"green"]) }
+        do { try bounded.commit(["type":"confidence","value":"green"]); fatalError("Accepted oversized history") }
+        catch NativeBoardFailure.capacity {}
+        precondition(bounded.seq == 20000 && bounded.operations.count == 20000)
+        try bounded.commit(["type":"clear"])
+        precondition(bounded.operations.count == 1)
         print("Native shared-protocol quantisation, undo/redo, clear, rewind, snapshot validation and indicators passed")
     }
 }

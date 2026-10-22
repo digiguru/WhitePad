@@ -10,6 +10,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
     var onBoardCleared: ((BoardCleared) -> Void)?
     var onKicked: (() -> Void)?
     var onBoardRecovered: ((NativeBoardViewState) -> Void)?
+    var onBoardCapacity: ((Bool) -> Void)?
     var onStatus: ((String) -> Void)?
     nonisolated private let ingress = NativeIngressGate()
     private static let factory: RTCPeerConnectionFactory = { RTCInitializeSSL(); RTCSetMinDebugLogLevel(.none); return RTCPeerConnectionFactory() }()
@@ -44,7 +45,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
     private let relayOnly: Bool
 
     init(webOrigin: URL, endpoint: URL, relayOnly: Bool = false, session: URLSession? = nil, protocolSource: String? = nil, persistence: NativeRecoveryPersistence = DeviceRecoveryPersistence()) throws {
-        guard endpoint.scheme == "https", endpoint.user == nil, endpoint.password == nil,
+        guard endpoint.scheme == "https", endpoint.host != nil, endpoint.user == nil, endpoint.password == nil,
               endpoint.query == nil, endpoint.fragment == nil, endpoint.path.isEmpty || endpoint.path == "/" else {
             throw WhitePadError.connectionFailed("Configure a trusted HTTPS signalling endpoint")
         }
@@ -191,7 +192,7 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
               epoch >= 0, rev >= 0, questionRev >= 0 else { throw WhitePadError.connectionFailed("Invalid classroom authority") }
         if epoch != controlEpoch {
             let background = board.operations.last { ($0["body"] as? [String:Any])?["type"] as? String == "background" }?["body"] as? [String:Any]
-            board.reset(); confirmedSeq = 0; beforeClear = nil
+            board.reset(); confirmedSeq = 0; beforeClear = nil; onBoardCapacity?(false)
             if let background { try board.commit(background) }
             onBoardCleared?(BoardCleared(studentId:student))
         } else if rev != revision { try board.rewind(to:confirmedSeq,beforeClear:beforeClear); beforeClear = nil }
@@ -254,7 +255,10 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
     private func requireSend(_ msg: [String:Any]) throws {
         guard sendFrame(msg) else { throw WhitePadError.connectionFailed("Peer delivery requires recovery") }
     }
-    func refreshConnection() { disconnect() }
+    func refreshConnection() {
+        do { try persist() } catch { recoveryAvailable = false; onStatus?("Local recovery unavailable") }
+        disconnect()
+    }
     private func integer(_ value: Any?) -> Int? {
         guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
               number.doubleValue.isFinite, number.doubleValue >= 0, number.doubleValue <= 9_007_199_254_740_991,
@@ -322,7 +326,17 @@ final class WebRTCClassroomClient: NSObject, ClassroomClientProtocol {
     private func commit(_ body: [String:Any], indicator: Bool = false) throws {
         guard online, !locked || indicator else { throw WhitePadError.connectionFailed("Drawing paused until controls reconcile") }
         if body["type"] as? String == "clear", beforeClear == nil { beforeClear = board.json }
-        try board.commit(body); scheduleSave()
+        do { try board.commit(body) }
+        catch NativeBoardFailure.capacity {
+            onBoardCapacity?(true); publishBoard()
+            onStatus?("Board limit reached. Clear your board to continue.")
+            throw NativeBoardFailure.capacity
+        }
+        if body["type"] as? String == "clear" {
+            onBoardCapacity?(false)
+            onStatus?(ready ? "Connected" : "Board cleared — saved locally")
+        }
+        scheduleSave()
     }
     func sendStrokeBatch(_ b: StrokeBatch) async throws {
         if b.points.isEmpty { try commit(["type":"background","pattern":b.backgroundType,"paper":b.paperColor]) }

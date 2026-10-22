@@ -160,6 +160,15 @@ final class StudentRoomSessionTests: XCTestCase {
         XCTAssertEqual(session.statusMessage, "Could not clear the teacher view.")
     }
 
+    func testTeacherClearRestoresDrawingAfterCapacityLimit() async {
+        let client = FakeHubClient()
+        let session = makeSession(hubClient:client)
+        session.drawingCapacityReached = true
+        client.onBoardCleared?(BoardCleared(studentId:"student-1"))
+        XCTAssertFalse(session.drawingCapacityReached)
+        XCTAssertEqual(session.boardClearRevision,1)
+    }
+
     private func makeSession(
         hubClient: FakeHubClient = FakeHubClient(),
         isLocked: Bool = false,

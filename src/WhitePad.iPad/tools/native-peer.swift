@@ -26,9 +26,9 @@ private final class MemoryRecovery: NativeRecoveryPersistence {
             if config["relay"] == "true" {
                 guard await client.selectedPathIsRelayed() else { throw WhitePadError.connectionFailed("No selected relay path") }
             }
-            print("NATIVE_DRAWING_SENT"); fflush(stdout)
+            FileHandle.standardOutput.write(Data("NATIVE_DRAWING_SENT\n".utf8))
             try await Task.sleep(nanoseconds:3_000_000_000)
             client.stop()
-        } catch { fputs("Native peer fixture failed\n",stderr); exit(1) }
+        } catch { FileHandle.standardError.write(Data("Native peer fixture failed\n".utf8)); exit(1) }
     }
 }

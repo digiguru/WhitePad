@@ -18,6 +18,7 @@ final class StudentRoomSession: ObservableObject {
     @Published var wasKicked = false
     @Published var statusMessage: String?
     @Published var boardClearRevision = 0
+    @Published var drawingCapacityReached = false
     @Published var recoveredBoard: NativeBoardViewState?
     @Published var recoveryRevision = 0
 
@@ -57,7 +58,7 @@ final class StudentRoomSession: ObservableObject {
             try await hubClient.setAnswered(value)
         } catch {
             hasAnswered.toggle()
-            statusMessage = "Could not update answered state."
+            statusMessage = failureMessage(error, fallback: "Could not update answered state.")
         }
     }
 
@@ -69,15 +70,17 @@ final class StudentRoomSession: ObservableObject {
             try await hubClient.setConfidence(level.rawValue)
         } catch {
             confidenceLevel = previous
-            statusMessage = "Could not update confidence."
+            statusMessage = failureMessage(error, fallback: "Could not update confidence.")
         }
     }
 
     func sendStrokeBatch(_ batch: StrokeBatch) async {
         do {
             try await hubClient.sendStrokeBatch(batch)
+        } catch NativeBoardFailure.capacity {
+            statusMessage = "Board limit reached. Clear your board to continue."
         } catch {
-            statusMessage = "Could not send drawing to the teacher."
+            statusMessage = failureMessage(error, fallback: "Could not send drawing to the teacher.")
         }
     }
 
@@ -85,7 +88,7 @@ final class StudentRoomSession: ObservableObject {
         do {
             try await hubClient.sendShape(shape)
         } catch {
-            statusMessage = "Could not send shape to the teacher."
+            statusMessage = failureMessage(error, fallback: "Could not send shape to the teacher.")
         }
     }
 
@@ -93,7 +96,7 @@ final class StudentRoomSession: ObservableObject {
         do {
             try await hubClient.undoStroke(strokeId)
         } catch {
-            statusMessage = "Could not undo on the teacher view."
+            statusMessage = failureMessage(error, fallback: "Could not undo on the teacher view.")
         }
     }
 
@@ -101,15 +104,19 @@ final class StudentRoomSession: ObservableObject {
         do {
             try await hubClient.clearBoard()
         } catch {
-            statusMessage = "Could not clear the teacher view."
+            statusMessage = failureMessage(error, fallback: "Could not clear the teacher view.")
         }
     }
 
+    private func failureMessage(_ error: Error, fallback: String) -> String {
+        error is NativeBoardFailure ? "Board limit reached. Clear your board to continue." : fallback
+    }
     func refreshConnection() { hubClient.refreshConnection() }
     func redoStroke(_ id: String) async {
-        do { try await hubClient.redoStroke(id) } catch { statusMessage = "Could not redo drawing." }
+        do { try await hubClient.redoStroke(id) } catch { statusMessage = failureMessage(error, fallback: "Could not redo drawing.") }
     }
     private func wireHubEvents() {
+        hubClient.onBoardCapacity = { [weak self] full in self?.drawingCapacityReached = full }
         hubClient.onStatus = { [weak self] status in self?.statusMessage = status }
         hubClient.onBoardRecovered = { [weak self] board in
             self?.recoveredBoard = board; self?.recoveryRevision += 1
@@ -130,6 +137,7 @@ final class StudentRoomSession: ObservableObject {
 
         hubClient.onBoardCleared = { [weak self] message in
             guard let self, message.studentId == self.studentId else { return }
+            self.drawingCapacityReached = false
             self.boardClearRevision += 1
         }
 

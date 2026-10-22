@@ -8,6 +8,7 @@ protocol ClassroomClientProtocol: AnyObject {
     var onBoardCleared: ((BoardCleared) -> Void)? { get set }
     var onKicked: (() -> Void)? { get set }
     var onBoardRecovered: ((NativeBoardViewState) -> Void)? { get set }
+    var onBoardCapacity: ((Bool) -> Void)? { get set }
     var onStatus: ((String) -> Void)? { get set }
     func refreshConnection()
     func startListening()
@@ -22,6 +23,7 @@ protocol ClassroomClientProtocol: AnyObject {
     func stop()
 }
 extension ClassroomClientProtocol {
+    var onBoardCapacity: ((Bool) -> Void)? { get { nil } set {} }
     func refreshConnection() {}
     var onBoardRecovered: ((NativeBoardViewState) -> Void)? { get { nil } set {} }
     var onStatus: ((String) -> Void)? { get { nil } set {} }

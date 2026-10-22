@@ -41,6 +41,9 @@ struct NativeWhiteboardView: View {
         .onAppear { restoreBoard() }
         .onChange(of: scenePhase) { _, _ in session.refreshConnection() }
         .onChange(of: session.recoveryRevision) { _, _ in restoreBoard() }
+        .onChange(of: session.drawingCapacityReached) { _, full in
+            if full { recorder?.reset(); recorder = nil; shapeDraft = nil }
+        }
         .onChange(of: session.isLocked) { _, locked in
             if locked { recorder?.reset(); recorder = nil; shapeDraft = nil }
         }
@@ -65,6 +68,14 @@ struct NativeWhiteboardView: View {
 
     private var classroomOverlay: some View {
         VStack {
+            if let status = session.statusMessage {
+                Text(status)
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.regularMaterial, in: Capsule())
+                    .accessibilityIdentifier("classroom-connection-status")
+            }
             if let currentQuestion = session.currentQuestion, !currentQuestion.isEmpty {
                 questionBanner(currentQuestion)
                     .padding(.top, 12)
@@ -530,7 +541,7 @@ struct NativeWhiteboardView: View {
     private func drawingGesture(canvasSize: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { value in
-                guard !session.isLocked else { return }
+                guard !session.isLocked, !session.drawingCapacityReached else { return }
                 if currentTool.isShape {
                     updateShapeDraft(start: value.startLocation, end: value.location, canvasSize: canvasSize)
                 } else {
@@ -538,7 +549,7 @@ struct NativeWhiteboardView: View {
                 }
             }
             .onEnded { value in
-                guard !session.isLocked else { return }
+                guard !session.isLocked, !session.drawingCapacityReached else { return }
                 if currentTool.isShape {
                     completeShape(start: value.startLocation, end: value.location, canvasSize: canvasSize)
                 } else {
@@ -555,7 +566,7 @@ struct NativeWhiteboardView: View {
             HStack(spacing: 12) {
                 Image(systemName: "lock.fill")
                     .font(.headline)
-                Text("Drawing is locked by your teacher")
+                Text(session.statusMessage?.hasPrefix("Connected") == true ? "Drawing is locked by your teacher" : "Drawing is paused")
                     .font(.headline.weight(.semibold))
             }
             .foregroundStyle(.primary)
@@ -723,7 +734,7 @@ struct NativeWhiteboardView: View {
     }
 
     private func sendBackgroundUpdate() {
-        guard !session.isLocked else { return }
+        guard !session.isLocked, !session.drawingCapacityReached else { return }
 
         let batch = StrokeBatch(
             studentId: session.studentId,

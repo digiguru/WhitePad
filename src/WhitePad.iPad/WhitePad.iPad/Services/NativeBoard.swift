@@ -42,7 +42,8 @@ final class NativeBoard {
         let op: [String: Any] = ["v":1,"opId":UUID().uuidString,"seq":seq+1,
             "epoch":epoch + ((body["type"] as? String) == "clear" ? 1 : 0),"body":body]
         guard call("apply", [value as Any, op])?.toString() == "applied" else {
-            throw WhitePadError.connectionFailed("Board limit or invalid drawing operation")
+            if context.exception?.toString().contains("Board storage limit") == true { throw NativeBoardFailure.capacity }
+            throw WhitePadError.connectionFailed("Invalid drawing operation")
         }
         return op
     }
@@ -102,3 +103,5 @@ struct NativeBoardViewState {
         strokes.removeAll{hidden.contains($0.id)}; shapes.removeAll{hidden.contains($0.id)}; order.removeAll{hidden.contains($0)}
     }
 }
+
+enum NativeBoardFailure: Error { case capacity }
