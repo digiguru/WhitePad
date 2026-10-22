@@ -16,12 +16,6 @@ struct ParsedJoinLinkView: View {
                 LabeledContent("Room ID", value: joinLink.roomId)
             }
 
-            if let webURL = joinLink.webRTCURL {
-                Section("WebRTC Classroom") {
-                    Text("This classroom uses peer-to-peer drawing. Continue in Safari to use all drawing tools with Apple Pencil. Legacy classrooms still open in this app.")
-                    Button("Continue in Safari") { openURL(webURL) }
-                }
-            } else {
             Section("Join Room") {
                 TextField("Your name", text: $displayName)
                     .textInputAutocapitalization(.words)
@@ -41,7 +35,6 @@ struct ParsedJoinLinkView: View {
                 .disabled(isJoining || displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
-            }
             Section {
                 Button("Parse Another Link") {
                     appRouter.reset()

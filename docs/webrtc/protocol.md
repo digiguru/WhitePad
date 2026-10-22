@@ -1,6 +1,6 @@
 # WhitePad peer protocol v1
 
-The executable TypeScript contract is `src/WhitePad.Web/src/p2p/protocol.ts`, shared by the web client and signalling backend. A future native transport must implement the same validation and state machine. JSON frames use UTF-8 on the reliable, ordered `whitepad-v1` RTCDataChannel. No lossy preview channel is enabled.
+The executable TypeScript contract is `src/WhitePad.Web/src/p2p/protocol.ts`, shared by the web client and signalling backend. The native transport executes this same validator/reducer through a generated JavaScriptCore bundle and supplies its own libwebrtc/signalling/recovery adapter. JSON frames use UTF-8 on the reliable, ordered `whitepad-v1` RTCDataChannel. No lossy preview channel is enabled.
 
 ## Board operations
 
@@ -20,7 +20,7 @@ Every operation is `{v:1, opId, seq, epoch, body}`. `opId` is a unique random id
 
 Shapes preserve line, rectangle, circle, arrow, L axes and cross axes. Erasing is a vector stroke with eraser metadata and uses destination-out rendering. Full-canvas screenshots are never routine synchronisation data.
 
-Coordinates are normalized and quantized to 0…65535; pressure to 0…255. Near-identical samples within 16 coordinate units are removed unless pressure changes or they are endpoints. This is intentionally conservative handwriting simplification, not a change to the local pen renderer. Validate appearance with real Pencil handwriting before tuning. The initial peer batching interval is 100 ms; legacy SignalR remains 50 ms. Pen-up flushes immediately.
+Coordinates are normalized and quantized to 0…65535; pressure to 0…255. Near-identical samples within 16 coordinate units are removed unless pressure changes or they are endpoints. This is intentionally conservative handwriting simplification, not a change to the local pen renderer. Validate appearance with real Pencil handwriting before tuning. The initial batching interval is 100 ms on web and native clients. Pen-up flushes immediately.
 
 Application is idempotent: a sequence at or below the accepted head is a duplicate, gaps request recovery, and the wrong epoch is rejected. A clear cannot be undone by delayed content. Reusing an operation ID at another sequence or referring to an unknown drawing object is invalid. Snapshots are validated by rebuilding their ordered operation stream before replacing a replica.
 

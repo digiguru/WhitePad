@@ -1,177 +1,46 @@
-# WhitePad - Live Mini-Whiteboards Web App
+# WhitePad
 
-WhitePad is a real-time classroom whiteboard system. Students join from iPad Safari and draw on personal boards; teachers monitor all boards live and control classroom flow.
+A classroom whiteboard with a static React/Vite frontend, TypeScript Cloudflare signalling and student-to-teacher WebRTC data channels. Each teacher receives only their classroom's boards. Drawing renders locally; ordinary drawing does not pass through Vercel or the signalling server.
 
-**Live demo**: https://whiteboard.mrhall.dev
-
-## Docs Index
-
-- `docs/WhitePad Project Plan.md`
-- `docs/TESTING-README.md`
-- `docs/stage0-architecture.md`
-- `docs/stage0-message-contracts.md`
-- `docs/stage0-wireframes.md`
-- `docs/stage0-repo-structure.md`
-- `docs/stage1-completion.md`
-- `docs/stage2-completion.md`
-- `docs/stage3-completion.md`
-- `docs/stage3-implementation-plan.md`
-- `docs/simplification-improvements-review.md`
-- `docs/stage4-regression-test-matrix.md`
-- `docs/handover-2026-05-20.md`
-
-## Current Status
-
-- Stages 0–3: complete
-- Stage 4 (iPad hardening/testing): in progress
-
-Stage 4 work shipped so far:
-
-- Simplified join flow: students land directly on the drawing canvas (no waiting room)
-- Classroom lock overlay: teacher can freeze editing without removing students from canvas
-- iPad palm/multi-touch rejection: single active pointer, stylus-first support
-- iOS toolbar picker overlay fix: colour/background popups render above canvas
-- Question mode: teacher pushes a question to all students; students mark themselves answered
-- Native iPad app (Swift/SwiftUI): full drawing tool parity with web client
-- Docker containerisation: multi-stage Dockerfile, image pushed to GHCR on each `main` push
-- Cloudflare Tunnel deployment: app is live at https://whiteboard.mrhall.dev
-- Regression matrix and frontend unit tests for lock/join transitions
-
-## Stack
-
-- Backend: ASP.NET Core 8 + SignalR
-- Frontend: React 18 + TypeScript + Vite
-- Native iPad: Swift / SwiftUI (PencilKit-style pointer handling)
-- Drawing: Pointer Events API, dual-canvas architecture
-- Deployment: Docker → GHCR → Cloudflare Tunnel
-
-## Quick Start
-
-### Prerequisites
-
-- .NET 8 SDK
-- Node.js 20+
-
-### Install
+## Development
 
 ```bash
-cd src/WhitePad.Server
-dotnet restore
-
-cd ../WhitePad.Web
-npm install
-```
-
-### Dev Run (fast iteration)
-
-Terminal 1:
-```bash
-cd src/WhitePad.Server
-dotnet run
-```
-
-Terminal 2:
-```bash
-cd src/WhitePad.Web
+cd src/WhitePad.Signalling
+npm ci
+# Configure ignored .dev.vars using .dev.vars.example, then:
 npm run dev
 ```
 
-### Production-Like Run (recommended for QR/iPad validation)
+In another terminal:
 
 ```bash
 cd src/WhitePad.Web
-npm run build:server
-
-cd ../WhitePad.Server
-dotnet run
+npm ci
+VITE_SIGNALLING_URL=http://localhost:8787 npm run dev
 ```
 
-Open:
-- Teacher: `https://localhost:5001/teacher`
-- Student: `https://localhost:5001/join?room=<roomId>&token=<token>`
+`npm run build` in `src/WhitePad.Web` outputs `dist`. Set `VITE_SIGNALLING_URL` to the deployed Worker for a hosted build. WebRTC is unconditional; `VITE_TRANSPORT` is obsolete. The native Swift app uses the same protocol over libwebrtc; configure its public origins in Info.plist and build using Xcode.
 
-For LAN iPad testing, run backend bound to your LAN address and use the generated join QR/link.
-
-### Docker
+## Checks
 
 ```bash
-docker build -t whitepad .
-docker run -p 8080:8080 whitepad
+npm test --prefix src/WhitePad.Web
+npm run build --prefix src/WhitePad.Web
+npm run check --prefix src/WhitePad.Signalling
+npm run test:deploy --prefix src/WhitePad.Signalling
+npm run test:quota --prefix src/WhitePad.Signalling
+node tools/webrtc/build-native-protocol.mjs
 ```
 
-The container exposes HTTP on port 8080. The GitHub Actions workflow (`docker.yml`) builds and pushes `ghcr.io/mrhallksc/whitepad:latest` automatically on every push to `main`.
-
-## Implemented Features
-
-- Room creation and student join via QR/link + token
-- Live teacher grid with student thumbnails (200×150 px tiles)
-- Tools: pen, eraser, line, rectangle, circle, arrow, L-axes, cross-axes
-- Backgrounds: none, dotted, lined, square grid; paper colours: white, buff
-- Undo/redo (Ctrl+Z/Y), clear board (student + teacher controls)
-- Confidence indicators and teacher confidence summary
-- Classroom lock overlay (read-only board while locked, student stays on canvas)
-- Teacher kick and per-student clear controls
-- Question mode (teacher broadcasts a question; students mark answered)
-- Native iPad app with full drawing tool parity, floating tool palette, edge-to-edge canvas
-- iPad input hardening: single-pointer, palm rejection, iOS picker z-index fix
-
-## Testing
-
-Backend tests:
-```bash
-dotnet test tests/WhitePad.Server.Tests/WhitePad.Server.Tests.csproj
-```
-
-Frontend tests (Vitest):
-```bash
-cd src/WhitePad.Web
-npm run test
-```
-
-Run all tests (PowerShell):
-```powershell
-./scripts/run-tests.ps1
-```
-
-Manual regression matrix: `docs/stage4-regression-test-matrix.md`
-
-Full testing guide: `docs/TESTING-README.md`
+GitHub Actions gates Cloudflare deployment on backend, browser and native checks. Vercel keeps its Git integration and production deployment checks. There is no C#/SignalR server, .NET build, legacy Docker release or transport fallback in this branch. Existing deployed services are not automatically shut down by removing their source. Older installed iPad apps must be updated or students can join in Safari.
 
 ## Documentation
 
-- `docs/WhitePad Project Plan.md` — full project plan and staged roadmap
-- `docs/TESTING-README.md` — automated + manual testing guide
-- `docs/stage0-architecture.md` — architecture and deployment models
-- `docs/stage0-message-contracts.md` — SignalR message contracts
-- `docs/stage0-wireframes.md` — UI wireframes
-- `docs/stage0-repo-structure.md` — repository structure plan
-- `docs/stage1-completion.md` — Stage 1 completion report
-- `docs/stage2-completion.md` — Stage 2 completion report
-- `docs/stage3-completion.md` — Stage 3 completion report
-- `docs/stage3-implementation-plan.md` — Stage 3 implementation plan (historical)
-- `docs/simplification-improvements-review.md` — simplification recommendations + status
-- `docs/stage4-regression-test-matrix.md` — Stage 4 manual regression checklist
-- `docs/handover-2026-05-20.md` — May 2026 handover: join flow simplification + native iPad parity
+- [Architecture and migration status](docs/webrtc/README.md)
+- [Deployment and environment variables](docs/webrtc/deployment.md)
+- [Native iPad integration](docs/webrtc/ipad-transition.md)
+- [Protocol](docs/webrtc/protocol.md)
+- [Verification and known capacity limits](docs/webrtc/verification.md)
+- [Cost assumptions](docs/webrtc/costs.md)
 
-## Next Priorities
-
-1. Validate QR join flow and all drawing tools on real iPads over LAN/Wi-Fi.
-2. Integrate pressure + smoothing (Perfect Freehand) for Apple Pencil strokes.
-3. Expand automated frontend tests around lock and join interactions.
-4. Move to Stage 5 (advanced classroom controls) once Stage 4 matrix is green.
-
-Last updated: 2026-05-20
-
-## WebRTC migration (feature branch)
-
-A static Vite frontend, Cloudflare Durable Object signalling/control plane, and authenticated TURN integration are available behind `VITE_TRANSPORT=webrtc`. The existing SignalR build remains the default during migration.
-
-- [Migration status and remaining tasks](docs/webrtc/README.md)
-- [Architecture and security](docs/webrtc/architecture.md)
-- [Versioned drawing and recovery protocol](docs/webrtc/protocol.md)
-- [Local setup, environment variables, GitHub Actions deployment and rollback](docs/webrtc/deployment.md)
-- [Native iPad transition](docs/webrtc/ipad-transition.md)
-- [Tests, load results and device acceptance](docs/webrtc/verification.md)
-- [Cost assumptions and sensitivity model](docs/webrtc/costs.md)
-
-Frontend builds: `npm run build` writes static assets to `dist`; `npm run build:server` writes to the ASP.NET `wwwroot` folder. Cloudflare deployments can run through GitHub Actions after configuring the environment secrets and variables in the linked deployment guide.
+The interrupted 400-participant soak is deferred. Sustained 400-user capacity and physical iPad acceptance remain unverified. Board recovery is local, not a durable cloud backup. Older stage documents describe historical implementations and are not deployment instructions for this architecture.

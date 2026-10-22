@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct NativeWhiteboardView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var session: StudentRoomSession
     let onLeave: () -> Void
 
@@ -37,6 +38,15 @@ struct NativeWhiteboardView: View {
                 bottomControlsOverlay
             }
         }
+        .onAppear { restoreBoard() }
+        .onChange(of: scenePhase) { _, _ in session.refreshConnection() }
+        .onChange(of: session.recoveryRevision) { _, _ in restoreBoard() }
+        .onChange(of: session.drawingCapacityReached) { _, full in
+            if full { recorder?.reset(); recorder = nil; shapeDraft = nil }
+        }
+        .onChange(of: session.isLocked) { _, locked in
+            if locked { recorder?.reset(); recorder = nil; shapeDraft = nil }
+        }
         .onChange(of: session.boardClearRevision) { _, _ in
             clearLocalBoard()
         }
@@ -58,6 +68,14 @@ struct NativeWhiteboardView: View {
 
     private var classroomOverlay: some View {
         VStack {
+            if let status = session.statusMessage {
+                Text(status)
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.regularMaterial, in: Capsule())
+                    .accessibilityIdentifier("classroom-connection-status")
+            }
             if let currentQuestion = session.currentQuestion, !currentQuestion.isEmpty {
                 questionBanner(currentQuestion)
                     .padding(.top, 12)
@@ -523,7 +541,7 @@ struct NativeWhiteboardView: View {
     private func drawingGesture(canvasSize: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { value in
-                guard !session.isLocked else { return }
+                guard !session.isLocked, !session.drawingCapacityReached else { return }
                 if currentTool.isShape {
                     updateShapeDraft(start: value.startLocation, end: value.location, canvasSize: canvasSize)
                 } else {
@@ -531,7 +549,7 @@ struct NativeWhiteboardView: View {
                 }
             }
             .onEnded { value in
-                guard !session.isLocked else { return }
+                guard !session.isLocked, !session.drawingCapacityReached else { return }
                 if currentTool.isShape {
                     completeShape(start: value.startLocation, end: value.location, canvasSize: canvasSize)
                 } else {
@@ -548,7 +566,7 @@ struct NativeWhiteboardView: View {
             HStack(spacing: 12) {
                 Image(systemName: "lock.fill")
                     .font(.headline)
-                Text("Drawing is locked by your teacher")
+                Text(session.statusMessage?.hasPrefix("Connected") == true ? "Drawing is locked by your teacher" : "Drawing is paused")
                     .font(.headline.weight(.semibold))
             }
             .foregroundStyle(.primary)
@@ -676,12 +694,12 @@ struct NativeWhiteboardView: View {
         case .stroke(let stroke):
             strokes.append(stroke)
             drawOrder.append(stroke.id)
-            resend(stroke)
+            Task { await session.redoStroke(stroke.id) }
         case .shape(let shape):
             shapes.append(shape)
             drawOrder.append(shape.shapeId)
             Task {
-                await session.sendShape(shape)
+                await session.redoStroke(shape.shapeId)
             }
         }
     }
@@ -694,6 +712,17 @@ struct NativeWhiteboardView: View {
         }
     }
 
+    private func restoreBoard() {
+        guard let board = session.recoveredBoard else { return }
+        strokes = board.strokes; shapes = board.shapes; drawOrder = board.order
+        currentBackground = board.background; currentPaperColor = board.paper
+        undoneItems = board.undoneOrder.compactMap { id in
+            if let stroke = board.hiddenStrokes.first(where:{$0.id == id}) { return .stroke(stroke) }
+            if let shape = board.hiddenShapes.first(where:{$0.id == id}) { return .shape(shape) }
+            return nil
+        }
+        recorder?.reset(); recorder = nil; shapeDraft = nil
+    }
     private func clearLocalBoard() {
         strokes = []
         shapes = []
@@ -705,7 +734,7 @@ struct NativeWhiteboardView: View {
     }
 
     private func sendBackgroundUpdate() {
-        guard !session.isLocked else { return }
+        guard !session.isLocked, !session.drawingCapacityReached else { return }
 
         let batch = StrokeBatch(
             studentId: session.studentId,
@@ -884,22 +913,30 @@ private struct FloatingGlassSurface: ViewModifier {
     let cornerRadius: CGFloat
     let interactive: Bool
 
+    @ViewBuilder
     func body(content: Content) -> some View {
+        #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
-            content
-                .glassEffect(
-                    interactive ? .regular.interactive() : .regular,
-                    in: .rect(cornerRadius: cornerRadius)
-                )
+            content.glassEffect(
+                interactive ? .regular.interactive() : .regular,
+                in: .rect(cornerRadius: cornerRadius)
+            )
         } else {
-            content
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
-                .overlay {
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(.white.opacity(0.45), lineWidth: 1)
-                }
-                .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 10)
+            fallback(content)
         }
+        #else
+        fallback(content)
+        #endif
+    }
+
+    private func fallback(_ content: Content) -> some View {
+        content
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(.white.opacity(0.45), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 10)
     }
 }
 

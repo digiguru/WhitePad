@@ -1,11 +1,12 @@
 import Foundation
+import Combine
 
 @MainActor
 final class AppRouter: ObservableObject {
     @Published var phase: SessionPhase = .idle
 
     private let deepLinkRouter = DeepLinkRouter()
-    private var hubClient: WhiteboardHubClient?
+    private var hubClient: WebRTCClassroomClient?
 
     func handleIncomingURL(_ url: URL) {
         resolve(rawURL: url.absoluteString)
@@ -29,9 +30,6 @@ final class AppRouter: ObservableObject {
     }
 
     func join(joinLink: JoinLink, displayName: String) async throws {
-        guard !joinLink.usesWebRTC else {
-            throw WhitePadError.joinRejected("Open this WebRTC classroom in Safari.")
-        }
         let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
             throw WhitePadError.joinRejected("Please enter your name.")
@@ -43,7 +41,13 @@ final class AppRouter: ObservableObject {
 
         hubClient?.stop()
 
-        let client = WhiteboardHubClient(serverBaseURL: joinLink.serverBaseURL)
+        guard let trustedOrigin = Bundle.main.object(forInfoDictionaryKey: "WhitePadWebOrigin") as? String,
+              joinLink.serverBaseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/")) == trustedOrigin,
+              let endpoint = Bundle.main.object(forInfoDictionaryKey: "WhitePadSignallingURL") as? String,
+              let url = URL(string: endpoint) else {
+            throw WhitePadError.joinRejected("This app build is not configured for that classroom host.")
+        }
+        let client = try WebRTCClassroomClient(webOrigin: joinLink.serverBaseURL, endpoint: url)
         hubClient = client
 
         do {
@@ -66,7 +70,7 @@ final class AppRouter: ObservableObject {
                 studentId: studentId,
                 displayName: confirmedDisplayName,
                 joinLink: joinLink,
-                isLocked: false,
+                isLocked: response.isLocked ?? true,
                 waitingRoomEnabled: response.waitingRoomEnabled ?? false,
                 waitingRoomUnlocked: response.waitingRoomUnlocked ?? false,
                 currentQuestion: response.currentQuestion,

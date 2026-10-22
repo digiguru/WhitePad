@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SignallingConfigurationError } from '../p2p/signallingUrl';
 import type { ClassroomConnection as HubConnection } from '../services/connection';
-import { createSignalRConnection } from '../services/signalr';
+import { createClassroomConnection } from '../services/classroom';
 import { CreateRoomResponse } from '../shared/types/messages';
 import Modal from '../shared/components/Modal';
 import { HubMethods } from '../shared/constants/hubContract';
@@ -45,7 +45,7 @@ function RoomCreatePage({ onRoomCreated }: RoomCreatePageProps) {
     let connection: HubConnection | null = null;
 
     try {
-      connection = createSignalRConnection('/hub/whiteboard');
+      connection = createClassroomConnection();
       await connection.start();
 
       const response: CreateRoomResponse = await connection.invoke(HubMethods.CreateRoom, roomName.trim());

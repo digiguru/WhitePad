@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ClassroomConnection as HubConnection } from '../../services/connection';
-import { createSignalRConnection } from '../../services/signalr';
+import { createClassroomConnection } from '../../services/classroom';
 import { HubEvents } from '../../shared/constants/hubContract';
 
 type StudentConnectionState = {
@@ -14,7 +14,7 @@ export function useStudentConnection(onKicked: () => void): StudentConnectionSta
 
   useEffect(() => {
     let isDisposed = false;
-    const conn = createSignalRConnection('/hub/whiteboard');
+    const conn = createClassroomConnection();
 
     const setupConnection = async () => {
       try {

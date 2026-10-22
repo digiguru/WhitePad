@@ -22,7 +22,7 @@ struct DrawingStrokeRecorder {
         backgroundType: BackgroundType = .none,
         paperColor: PaperColor = .white,
         isEraser: Bool = false,
-        batchInterval: TimeInterval = 0.05
+        batchInterval: TimeInterval = 0.1
     ) {
         self.studentId = studentId
         self.color = color

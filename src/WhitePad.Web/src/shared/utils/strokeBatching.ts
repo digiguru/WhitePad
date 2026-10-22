@@ -8,7 +8,7 @@ export class StrokeBatcher {
   constructor(
     private strokeId: string,
     private onBatch: (batch: Partial<StrokeBatch>) => void,
-    intervalMs = import.meta.env.VITE_TRANSPORT === 'webrtc' ? 100 : 50
+    intervalMs = 100
   ) { this.batchInterval = Math.max(25, Math.min(250, intervalMs)); }
 
   cancel() {

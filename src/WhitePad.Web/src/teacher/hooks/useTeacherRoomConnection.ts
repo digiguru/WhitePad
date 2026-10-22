@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ClassroomConnection as HubConnection } from '../../services/connection';
-import { createSignalRConnection } from '../../services/signalr';
+import { createClassroomConnection } from '../../services/classroom';
 import {
   ParticipantJoined,
   ParticipantLeft,
@@ -41,7 +41,7 @@ export function useTeacherRoomConnection(roomId: string): TeacherRoomConnectionS
 
   useEffect(() => {
     let isDisposed = false;
-    const conn = createSignalRConnection('/hub/whiteboard');
+    const conn = createClassroomConnection();
     let boardFlush: ReturnType<typeof setTimeout> | null = null;
     let pendingBoards: ((previous: TeacherBoardStates) => TeacherBoardStates)[] = [];
     const flushBoards = () => {

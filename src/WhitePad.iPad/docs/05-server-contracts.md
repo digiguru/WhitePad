@@ -1,3 +1,5 @@
+> Historical SignalR-era planning notes. For the current native WebRTC implementation, build instructions and limitations, read [Native iPad WebRTC](../../../docs/webrtc/ipad-transition.md). The C#/SignalR deployment path is retired in source.
+
 # Server Contracts
 
 The iPad app should use the existing SignalR hub:

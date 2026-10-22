@@ -11,7 +11,6 @@ type TeacherSession = {
 
 function TeacherApp() {
   const [session, setSession] = useState<TeacherSession | null>(() => {
-    if (import.meta.env.VITE_TRANSPORT !== 'webrtc') return null;
     try {
       const saved = JSON.parse(sessionStorage.getItem('whitepad:teacherRoom:v1') ?? 'null');
       return saved?.expires > Date.now() ? saved.session : null;
@@ -21,9 +20,7 @@ function TeacherApp() {
   if (!session) {
     return <RoomCreatePage onRoomCreated={(id, name, token, url) => {
       const next = { roomId: id, roomName: name, joinToken: token, joinUrl: url };
-      if (import.meta.env.VITE_TRANSPORT === 'webrtc') {
-        try { sessionStorage.setItem('whitepad:teacherRoom:v1', JSON.stringify({ session: next, expires: Date.now() + 86400000 })); } catch { /* Session remains usable until refresh. */ }
-      }
+      try { sessionStorage.setItem('whitepad:teacherRoom:v1', JSON.stringify({ session: next, expires: Date.now() + 86400000 })); } catch { /* Session remains usable until refresh. */ }
       setSession(next);
     }} />;
   }
